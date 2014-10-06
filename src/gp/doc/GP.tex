@@ -1,0 +1,28 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath}
+
+\begin{document}
+
+\title{}
+\author{}
+\date{}
+\maketitle
+
+\section{Marginal Log-Likelihood}
+Library:
+\begin{equation}
+	log p(X) = - \frac{1}{2}(f(X)-m)'(K(X,X)-I\sigma_n^2)^{-1} (f(X)-m) - \frac{1}{2} log|K(X,X)-I\sigma_n^2 | - \frac{1}{2}n log(2 \pi \sigma_n^2)
+\end{equation}
+Book:
+\begin{equation}
+	log p(X) = - \frac{1}{2}(y-m)'* (K-I\sigma_n^2)^{-1} * (y-m) - \frac{1}{2} log|K-I\sigma_n^2 | - \frac{1}{2} nlog(2 \pi)
+\end{equation}
+
+\section{Prediction}
+\begin{align}
+	f(X*) &= m(X^*) + K(\theta,X^*,X)' (K(X,X)-I\sigma_n^2)^{-1} (f(X)-m(X))\\
+	\sigma(X*) &= K(\theta,X^*,X^*) - K(\theta,X^*,X)' (K(X,X)-I\sigma_n^2)^{-1} K(\theta,X^*,X)
+\end{align}
+
+\end{document}
