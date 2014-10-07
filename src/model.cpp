@@ -23,6 +23,8 @@
 #include <string.h>
 #include <vector>
 
+#include "hash.hpp"
+#include "statistics.hpp"
 #include "model.hpp"
 
 enum CellPhenotypes{ FREE=0, DIVIDING=2, QUESCENT=3, DEAD=1};
@@ -70,63 +72,7 @@ public:
 
 #include <stdint.h>
 
-uint32_t mersenne_twister() {
-#define N     624
-#define M     397
-#define HI    0x80000000
-#define LO    0x7fffffff
-  static const uint32_t A[2] = { 0, 0x9908b0df };
-  static uint32_t y[N];
-  static int index = N+1;
-  static const uint32_t seed = 5489UL;
-  uint32_t  e;
 
-  if (index > N) {
-    int i;
-    /* Initialisiere y mit Pseudozufallszahlen */
-    y[0] = seed;
-
-    for (i=1; i<N; ++i) {
-      y[i] = (1812433253UL * (y[i-1] ^ (y[i-1] >> 30)) + i);
-      /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
-      /* In the previous versions, MSBs of the seed affect   */
-      /* only MSBs of the array mt[].                        */
-      /* 2002/01/09 modified by Makoto Matsumoto             */
-    }
-  }
-
-  if (index >= N) {
-    int i;
-    /* Berechne neuen Zustandsvektor */
-    uint32_t h;
-
-    for (i=0; i<N-M; ++i) {
-      h = (y[i] & HI) | (y[i+1] & LO);
-      y[i] = y[i+M] ^ (h >> 1) ^ A[h & 1];
-    }
-    for ( ; i<N-1; ++i) {
-      h = (y[i] & HI) | (y[i+1] & LO);
-      y[i] = y[i+(M-N)] ^ (h >> 1) ^ A[h & 1];
-    }
-
-    h = (y[N-1] & HI) | (y[0] & LO);
-    y[N-1] = y[M-1] ^ (h >> 1) ^ A[h & 1];
-    index = 0;
-  }
-
-  e = y[index++];
-  /* Tempering */
-  e ^= (e >> 11);
-  e ^= (e <<  7) & 0x9d2c5680;
-  e ^= (e << 15) & 0xefc60000;
-  e ^= (e >> 18);
-
-  return e;
-#undef N
-#undef M
-#undef HI
-#undef LO
-}
 
 
 void doThatStat( Cell* lattice[], double molecule[], int size, double contribution, double stat[], int length, double &progress, const char* filename, char stat_type, double *stat_out){
@@ -192,7 +138,7 @@ double atpPro( double g, double o) {
 }
 
 double updateRates(
-		Cell* lattice[], int N, vector<Cell*> cells, model_input minp,  // input
+		Cell* lattice[], int N, std::vector<Cell*> cells, model_input minp,  // input
 		double oxy[], double glc[], // multiscale
 		Process* processes[], int &M // output
 		){
@@ -288,7 +234,7 @@ void shift(
     lattice[ origin] = 0;
 }
 
-void perform( Cell* lattice[], int N, vector<Cell*> &cells,
+void perform( Cell* lattice[], int N, std::vector<Cell*> &cells,
 		double glc[], double oxy[], double ecm[],
 		Process* process, model_input minp, unsigned int *p_rseed ){
 
@@ -407,26 +353,26 @@ double* model( int parc, double *parv)
 	minp.k_re    = 0.01;
 
 	unsigned int rseed = 0;
-
-	switch( parc){
+	for( int i=0; i<parc; i++)
+	switch( i+1){
 	case 9:
-		minp.atp_min = (parv[8]); 	if(minp.atp_min) minp.USE_ATP = true;
+		minp.atp_min = (parv[8]); 	if(minp.atp_min) minp.USE_ATP = true; break;
 	case 8:
-		minp.ecm_min = (parv[7]); 	if(minp.ecm_min) minp.USE_ECM = true;
+		minp.ecm_min = (parv[7]); 	if(minp.ecm_min) minp.USE_ECM = true; break;
 	case 7:
-		minp.qecm    = (parv[5]); 	if(minp.qecm) minp.USE_ECM = true;
+		minp.qecm    = (parv[5]); 	if(minp.qecm) minp.USE_ECM = true; break;
 	case 6:
-		minp.pecm    = (parv[6]); 	if(minp.pecm) minp.USE_ECM = true;
+		minp.pecm    = (parv[6]); 	if(minp.pecm) minp.USE_ECM = true; break;
 	case 5:
-	 	InitialQuiescent =   (parv[4]);
+	 	InitialQuiescent =   (parv[4]); break;
 	case 4:
-	 	InitialRadius = max( (int)(parv[3]), 0);
+	 	InitialRadius = fmax( (int)(parv[3]), 0); break;
 	case 3:
-		minp.delta_L=        max( (int)(parv[2]), 0);
+		minp.delta_L=        fmax( (int)(parv[2]), 0); break;
 	case 2:
-		minp.k_div  =        dmax( (parv[1]), 0);
+		minp.k_div  =        fmax( (parv[1]), 0); break;
 	case 1:
-		rseed = (unsigned int) parv[0];
+		rseed = (unsigned int) parv[0]; break;
 	 	//srand( (int)( parv[0]));
 	}
 	//fprintf(stderr, "seed = %i\n", rseed);
@@ -438,7 +384,7 @@ double* model( int parc, double *parv)
 	// declare variables
 	int N=1000;
 	Cell* lattice[N];
-	vector<Cell*> cells;
+	std::vector<Cell*> cells;
 
 	// initial condition
 	for( int i=0; i<InitialRadius && i<N; i++){
@@ -606,7 +552,7 @@ double* model( int parc, double *parv)
 				   oxy[i] += doxy[i];
 				   glc[i] += dglc[i];
 
-				   residual = max( residual, fabs(doxy[i]));
+				   residual = fmax( residual, fabs(doxy[i]));
 			   }
 
 			   //printf( "residual=%e\n ", residual);
@@ -663,57 +609,9 @@ double* model( int parc, double *parv)
 	return mout;
 }
 
-unsigned long hash_float( float f )
-{
-    unsigned long ui;
-    memcpy( &ui, &f, sizeof( float ) );
-    return ui;
-}
 
-unsigned long hash_double( double f )
-{
-    unsigned long ui1, ui2;
-    float *pf = (float*)&f;
-    memcpy( &ui1, &pf[0], sizeof( float ) );
-    memcpy( &ui2, &pf[1], sizeof( float ) );
-    return ui1 + ui2;
-}
 
-unsigned long hash_array( double *v, int n){
 
-	unsigned long hash_code = 0;
-	for( int i=0; i<n; i++){
-		//printf( "[ %e -> %u ]\n", v[i], hash_double( v[i]));
-		hash_code = (hash_code + hash_double( v[i]));
-	}
-
-	return hash_code;
-}
-
-double logLikelihood( double *v1, double *v2, double *s21, double *s22, int n)
-{
-	double logL = 0;
-
-	/*if( s22){
-		for( int i=0; i<n; i++) if(s21[i])
-			logL += - pow( v1[i] - v2[i], 2) / s21[i] - pow(s21[i] - s22[i], 2) / s21[i];
-	}else*/
-	if( s21){
-		for( int i=0; i<n; i++)
-			if( s21[i]>0){
-				double last = logL;
-				logL += - 0.5 * log(2*M_PI*s21[i]) - 0.5 * pow( v1[i] - v2[i], 2) / s21[i];
-				if( isinf(logL) || isnan(logL) || isinf(-logL)){
-					fprintf( stderr, "%i: v1=%e, v2=%e, s21=%e -> %e + %e = %e -> %e\n", i, v1[i], v2[i], s21[i], - 0.5 * log(2*M_PI*s21[i]), - 0.5 * pow( v1[i] - v2[i], 2) / s21[i], - 0.5 * log(2*M_PI*s21[i]) - 0.5 * pow( v1[i] - v2[i], 2) / s21[i], last);
-										exit(0);
-				}
-			}
-	}else
-		for( int i=0; i<n; i++)
-			logL += - pow( (v1[i] - v2[i]), 2);
-
-	return logL;
-}
 
 /*void average( double **x, int n, int m, double *m){
 	for( int j=0; j<m; j++){
@@ -724,90 +622,10 @@ double logLikelihood( double *v1, double *v2, double *s21, double *s22, int n)
 	}
 }*/
 
-double *average( double **x, int n){
-	double *m = (double*) malloc( 2400 * sizeof(double));
-
-	for( int j=0; j<2400; j++){
-		m[j] = 0;
-		for( int i=0; i<n; i++)
-			m[j] += x[i][j];
-		m[j] /= (double) n;
-	}
-
-	return m;
-}
-
-double *standarddeviation( double **x, double *m, int n){
-	double *s2 = (double*) malloc( 2400 * sizeof(double));
-
-	for( int j=0; j<2400; j++){
-		s2[j] = 0;
-		for( int i=0; i<n; i++){
-			s2[j] += pow( x[i][j] - m[j], 2);
-			/*if( isinf(s2[j])){
-				fprintf( stderr, "%i, %i: x=%e, m=%e\n", i,j, x[i][j], m[j]);
-			}*/
-		}
-		s2[j] /= (double) n;
-
-/*		if( isinf(s2[j])){
-			//fprintf( stderr, "%i: x=%e, m=%e\n", i, x[i][j], m[j]);
-			printf( "%e %e");
-		}
-*/
-	}
-
-	return s2;
-}
-
-int cmpfunc (const void * a, const void * b){
-   return ( *(double*)a < *(double*)b ? -1 : 1 );
-}
 
 
 
-KSTestResult KolmogorovSmirnoffTest( int n1, double *x1, int n2, double *x2){
-	int i1=0, i2=0;
-	double y1 = 0, y2 = 0;
 
-	// sort x1 & x2
-	qsort( x1, n1, sizeof(double), cmpfunc);
-	qsort( x2, n2, sizeof(double), cmpfunc);
-
-	KSTestResult result;
-
-	// Statistics
-	result.KSstatistic = 0;
-	do{
-		// which is next?
-		if( i1 < n1 && (i2==n2 || x1[i1] < x2[i2])){
-			y1 += 1./n1;
-			//fprintf( stderr, "x1[%i] = %e\n", i1, x1[i1]);
-			i1++;
-		}else{
-			y2 += 1./n2;
-			//fprintf( stderr, "x2[%i] = %e\n", i2, x2[i2]);
-			i2++;
-		}
-
-		result.KSstatistic = max( fabs(y1-y2), result.KSstatistic);
-
-	}while(i1<n1 || i2<n2);
-
-	// p-Value
-	result.pValue = 0;
-	int    n      =  n1 * n2 /(n1 + n2);
-	double lambda =  max((sqrt(n) + 0.12 + 0.11/sqrt(n)) * result.KSstatistic , 0.);
-	for( int j=1; j<=101; j++)
-		result.pValue  +=  2 * pow(-1, j-1)*exp(-2*lambda*lambda*j*j);
-	result.pValue  =  min( max(result.pValue, 0.), 1.);
-
-	// Significance Test
-	double alpha = 0.05;
-	result.H = ( alpha >= result.pValue ? true : false);
-
-	return result;
-}
 
 double compare( int parc, double *parv1, double *parv2, int n1, int n2){
 	char filename[1024];
@@ -864,10 +682,10 @@ double compare( int parc, double *parv1, double *parv2, int n1, int n2){
 
 	//KolmogorovSmirnoffTest( 300, m_av1.growth_curve, 300, m_av2.growth_curve);
 
-	m_av1  = average( m_out1, n1);
-	s2_av1 = standarddeviation( m_out1, m_av1, n1);
-	m_av2 = average( m_out2, n2);
-	s2_av2 = standarddeviation( m_out2, m_av2, n2);
+	m_av1  = mean( m_out1, n1, 2400, rowwise);
+	s2_av1 = std2( m_out1, m_av1, n1, 2400, rowwise);
+	m_av2 = mean( m_out2, n2, 2400, rowwise);
+	s2_av2 = std2( m_out2, m_av2, n2, 2400, rowwise);
 	double negloglik =	- logLikelihood( (double*)m_av1, (double*)m_av2, (double*)s2_av1, (double*)s2_av2, length);
 
 

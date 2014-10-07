@@ -17,7 +17,7 @@ T log_marginal_likelihood(
 {
 	T lik = 0;
 	
-	T **K = newMatrix<T>( n, n);
+	T **K = allocMatrix<T>( n, n);
 	covMatrix<T>( K, X, n,d, covFunc, theta);
 	//fprintf( stderr, "Covariance Matrix: K =\n");
 	//printMatrix( K, n, n);
@@ -34,7 +34,7 @@ T log_marginal_likelihood(
 	T   detK = determinantLU( K, n);
 	//fprintf( stderr, "det(K) = %10.2lf\n", detK);
 	
-	T** invK = newMatrix<T>( n, n);
+	T** invK = allocMatrix<T>( n, n);
 	//inverseCholesky( K, invK, n);
 	inverseLU( K, invK, n);
 	//invertGaussJordan( K, invK, n);
@@ -54,8 +54,8 @@ T log_marginal_likelihood(
 	);
     //- 0.5 * d * log(2*M_PI);
 	
-	deleteMatrix( K,    n);
-	deleteMatrix( invK, n);
+	freeMatrix( K,    n);
+	freeMatrix( invK, n);
 
 	return lik;
 }
@@ -70,7 +70,7 @@ T log_marginal_likelihood(
 {
 	T lik = 0;
 
-	T **K = newMatrix<T>( n, n);
+	T **K = allocMatrix<T>( n, n);
 	covMatrix<T>( K, X, n,d, covFunc, theta);
 	//fprintf( stderr, "Covariance Matrix: K =\n");
 	//printMatrix( K, n, n);
@@ -87,7 +87,7 @@ T log_marginal_likelihood(
 	//T   detK = determinantCholesky( K, n);
 	//T   detK = determinantLU( K, n);
 
-	T** invK = newMatrix<T>( n, n);
+	T** invK = allocMatrix<T>( n, n);
 	//inverseCholesky( K, invK, n);
 	//inverseLU( K, invK, n);
 	//invertGaussJordan( K, invK, n);
@@ -125,8 +125,8 @@ T log_marginal_likelihood(
 		  );
     //- 0.5 * d * log(2*M_PI);
 
-	deleteMatrix( K,    n);
-	deleteMatrix( invK, n);
+	freeMatrix( K,    n);
+	freeMatrix( invK, n);
 
 	return lik;
 }

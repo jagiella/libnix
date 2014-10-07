@@ -8,7 +8,7 @@
 #ifndef MODEL_HPP_
 #define MODEL_HPP_
 
-using namespace std;
+
 
 
 typedef struct {
@@ -28,13 +28,5 @@ typedef struct {
 
 double* model( int parc, double *parv);
 double compare( int parc, double *parv1, double *parv2, int n1, int n2);
-
-typedef struct{
-	bool   H;
-	double pValue;
-	double KSstatistic;
-} KSTestResult;
-
-KSTestResult KolmogorovSmirnoffTest( int n1, double *x1, int n2, double *x2);
 
 #endif /* MODEL_HPP_ */

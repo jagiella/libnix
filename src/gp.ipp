@@ -16,7 +16,7 @@ void evalVariance(
 	T (*covFunc) ( T* &, T* &, int &, T* &), double* &theta)
 {
 	// covariance
-	double **K = newMatrix<double>( n, n);
+	double **K = allocMatrix<double>( n, n);
 	covMatrix<double>( K, x, n,d, covFunc, theta);
 
 	// noise
@@ -28,7 +28,7 @@ void evalVariance(
 			K[i][i] += s2[i] + pow(10,theta[0]);
 
 	// inverse of K
-	double** invK = newMatrix<double>( n, n);
+	double** invK = allocMatrix<double>( n, n);
 	//inverseCholesky( K, invK, n);
 	inverseLU( K, invK, n);
 
@@ -54,8 +54,8 @@ void evalVariance(
 
 	}
 
-	deleteMatrix( K,    n);
-	deleteMatrix( invK, n);
+	freeMatrix( K,    n);
+	freeMatrix( invK, n);
 }
 
 template <class T> // 				>>> M E X <<<
@@ -66,7 +66,7 @@ void evalVariance(
 	T (*covFunc) ( T* &, T* &, int &, T* &), double* &theta)
 {
 	// covariance
-	double **K = newMatrix<double>( n, n);
+	double **K = allocMatrix<double>( n, n);
 	covMatrix<double>( K, x, n,d, covFunc, theta);
 
 	// noise
@@ -78,7 +78,7 @@ void evalVariance(
 			K[i][i] += s2[i] + pow(10,theta[0]);
 
 	// inverse of K
-	double** invK = newMatrix<double>( n, n);
+	double** invK = allocMatrix<double>( n, n);
 	//inverseCholesky( K, invK, n);
 
 	gsl_error_handler_t *old_handler = gsl_set_error_handler_off();
@@ -113,8 +113,8 @@ void evalVariance(
 		s2new[i] = covFunc( pRow, pRow, d, theta) - dotProduct<double>( ptmp, pcov, n);
 	}
 
-	deleteMatrix( K,    n);
-	deleteMatrix( invK, n);
+	freeMatrix( K,    n);
+	freeMatrix( invK, n);
 }
 
 

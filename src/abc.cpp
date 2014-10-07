@@ -18,11 +18,10 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_permutation.h>
 #include <gsl/gsl_linalg.h>
-//#include <gsl_matrix.h>
-//#include <gsl_permutation.h>
-//#include <gsl_linalg.h>
 
-using namespace std;
+#include "matrix.hpp"
+#include "statistics.hpp"
+
 
 #define RAND01         ((double)rand()      /((double)RAND_MAX+1.))
 #define RAND01_R(seed) ((double)rand_r(seed)/(double)(RAND_MAX))
@@ -39,17 +38,6 @@ double bla( double *a, double **B, double *c, int n){
 	}
 
 	return rtn;
-}
-
-void BoxMuller( double *rnd, int n, unsigned int *p_seed)
-{
-	//srand( time(NULL));
-	for( int i=0; i<n; i+=2){
-		double u1=RAND01_R(p_seed), u2=RAND01_R(p_seed);
-		rnd[i]   = sqrt(-2*log(u1))*cos(2*M_PI*u2);
-		if(i+1<n)
-		rnd[i+1] = sqrt(-2*log(u1))*sin(2*M_PI*u2);
-	}
 }
 
 void minimum( double *x, int n, double &min_x, int &min_i)
@@ -97,7 +85,7 @@ void _cov( double **A, int n, int m, double *mean, double **cov){
 		}
 }
 
-double **allocMatrix( int n, int m){
+/*double **allocMatrix<double>( int n, int m){
 	double **x_old = (double**)malloc( n*sizeof(double**));
 	for( int i=0; i<n; i++)
 		x_old[i] = (double*)malloc( m*sizeof(double*));
@@ -108,7 +96,7 @@ void printVector( double *x, int m, const char *fmt = "%5.2e "){
 	for( int j=0; j<m; j++)
 		fprintf( stderr, fmt, x[j]);
 	fprintf( stderr, "\n");
-}
+}*/
 void normalizeVector( double *x, int m){
 
 	double sum = 0;
@@ -117,11 +105,11 @@ void normalizeVector( double *x, int m){
 	for( int j=0; j<m; j++)
 		x[j] /= sum;
 }
-void printMatrix( double **A, int n, int m, const char *fmt){
+/*void printMatrix( double **A, int n, int m, const char *fmt){
 
 	for( int i=0; i<n; i++)
 		printVector( A[i], m, fmt);
-}
+}*/
 int cumsum( double *x, int n, double partial_sum)
 {
 	double sum = 0;
@@ -147,96 +135,6 @@ void matrixMultiplication( double **A, double **B, int n, int m, int l, double *
 		}
 }
 
-template <class T>
-void inverseLU( T** &A, T** &invA, int n) {
-
-	gsl_matrix *gslA = gsl_matrix_alloc( n, n);
-	for( int i=0; i<n; i++)
-		for( int j=0; j<n; j++){
-			gslA->data[i * gslA->tda + j] = A[i][j];
-		}
-	gsl_matrix *gslInvA = gsl_matrix_alloc( n, n);
-	int signum=0; int row_sq = gslA->size1;
-	gsl_permutation * p = gsl_permutation_calloc(row_sq);
-
-	gsl_linalg_LU_decomp ( gslA, p, &signum);
-	gsl_linalg_LU_invert ( gslA, p, gslInvA);
-
-	for( int i=0; i<n; i++)
-		for( int j=0; j<n; j++){
-			invA[i][j] = gslInvA->data[i * gslInvA->tda + j];
-		}
-
-	gsl_permutation_free( p);
-	gsl_matrix_free( gslA);
-	gsl_matrix_free( gslInvA);
-}
-
-template <class T>
-void inverseCholesky( T** &A, T** &invA, int n) {
-
-	gsl_matrix *invCholesky = gsl_matrix_alloc( n, n);
-	for( int i=0; i<n; i++)
-		for( int j=0; j<n; j++){
-			invCholesky->data[i * invCholesky->tda + j] = A[i][j];
-		}
-
-	gsl_linalg_cholesky_decomp ( invCholesky);
-	gsl_linalg_cholesky_invert ( invCholesky);
-
-	for( int i=0; i<n; i++)
-		for( int j=0; j<n; j++){
-			invA[i][j] = invCholesky->data[i * invCholesky->tda + j];
-		}
-
-
-	gsl_matrix_free( invCholesky);
-}
-
-template <class T>
-double determinantCholesky( T** &A, int n) {
-
-	gsl_matrix *invA = gsl_matrix_alloc( n, n);
-	for( int i=0; i<n; i++)
-		for( int j=0; j<n; j++)
-			invA->data[i * invA->tda + j] = A[i][j];
-
- 	double det = 1;
-
-	gsl_linalg_cholesky_decomp(invA);
-
-	for( int i=0; i<n; i++)
-		det = pow( invA->data[i * invA->tda + i], 2);
-
- 	gsl_matrix_free(invA);
-
- 	fprintf( stderr, "[ %e = %e ]\n", det, DET2( A));
- 	det = DET2( A);
-  	return det;
-}
-
-template <class T>
-double determinantLU( T** &A, int n) {
-
-	gsl_matrix *invA = gsl_matrix_alloc( n, n);
-	for( int i=0; i<n; i++)
-		for( int j=0; j<n; j++)
-			invA->data[i * invA->tda + j] = A[i][j];
-
-	int sign=0; double det=0.0; int row_sq = invA->size1;
-	gsl_permutation * p = gsl_permutation_calloc(row_sq);
-	int * signum = &sign;
-	gsl_linalg_LU_decomp(invA, p, signum);
-	det = gsl_linalg_LU_det(invA, *signum);
-
-	gsl_permutation_free(p);
-	gsl_matrix_free(invA);
-
- 	//fprintf( stderr, "[ %e = %e ]\n", det, DET2( A));
- 	//det = DET2( A);
-  	return det;
-}
-
 double mvnpdf( const double *x, double *mean, double **inv_s2, double det_s2, int n)
 {
 	double x0[n];
@@ -257,7 +155,7 @@ void mvnrnd( double *x, double *mean, double **s2, int n, unsigned int *p_seed)
 {
 	// sample from MVnorm dist around chosen point
 	double z[n];
-	BoxMuller( z, n, p_seed);
+	normrnd( z, n, p_seed);
 
 	//fprintf( stderr, "Sample: ");
 	for( int i=0; i<n; i++){
@@ -356,7 +254,7 @@ double myfuncnorm(int n, const double *x, double *grad, void *my_func_data)
 		dist += pow( x[i] - 2, 2);
 
 	double rnd = 0;
-	BoxMuller( &rnd, 1, (unsigned int *)my_func_data);
+	normrnd( &rnd, 1, (unsigned int *)my_func_data);
 
 	double s2 = 10;
 //	return sqrt(dist) + rnd*2*sqrt(s2);
@@ -578,7 +476,7 @@ int main( int argc, char **argv){
 
 
 	int iCPU = 10;
-	n = ( argc>4 ? atoi( argv[4]) : 1 );
+	n = ( argc>4 ? atoi( argv[4]) : 100 );
 
 	char suffix[1024];
 	char filename[1024];
@@ -592,11 +490,11 @@ int main( int argc, char **argv){
 	double  *f_new,  *f_old,  *f_tmp,  *f_par;
 	double  *w_new,  *w_old,  *w_tmp,  *w_par;
 	int      n_new,   n_old,            n_par = nparallel;
-	double mean[d], **cov = allocMatrix(d,d), **invcov = allocMatrix(d,d), **covL = allocMatrix(d,d), detcov;
+	double mean[d], **cov = allocMatrix<double>(d,d), **invcov = allocMatrix<double>(d,d), **covL = allocMatrix<double>(d,d), detcov;
 
-	x_old = allocMatrix( n+n_par, d);	f_old = (double*) malloc((n+n_par)*sizeof(double));	w_old = (double*) malloc((n+n_par)*sizeof(double)); n_old = 0;
-	x_new = allocMatrix( n+n_par, d);	f_new = (double*) malloc((n+n_par)*sizeof(double));	w_new = (double*) malloc((n+n_par)*sizeof(double)); n_new = 0;
-	x_par = allocMatrix( n_par,  d);	f_par = (double*) malloc(n_par*sizeof(double));    	w_par = (double*) malloc(n_par*sizeof(double));
+	x_old = allocMatrix<double>( n+n_par, d);	f_old = (double*) malloc((n+n_par)*sizeof(double));	w_old = (double*) malloc((n+n_par)*sizeof(double)); n_old = 0;
+	x_new = allocMatrix<double>( n+n_par, d);	f_new = (double*) malloc((n+n_par)*sizeof(double));	w_new = (double*) malloc((n+n_par)*sizeof(double)); n_new = 0;
+	x_par = allocMatrix<double>( n_par,  d);	f_par = (double*) malloc(n_par*sizeof(double));    	w_par = (double*) malloc(n_par*sizeof(double));
 
 
 #ifdef USE_OMP
@@ -836,7 +734,7 @@ int main( int argc, char **argv){
 		//printMatrix( covL, d, d, "%10e ");
 
 		//fprintf( stderr, "L*L^T\n");
-		/*double **test = allocMatrix( d,d);
+		/*double **test = allocMatrix<double>( d,d);
 		for( int i=0; i<d; i++)
 			for( int j=0; j<d; j++){
 				test[i][j] = 0;

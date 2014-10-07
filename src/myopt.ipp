@@ -5,21 +5,9 @@
  *      Author: jagiella
  */
 
-
-#define RAND01_R( T, seed) ((T)rand_r(seed)/(T)(RAND_MAX))
-
-double median( double *x, int n);
-double mad( double *x, int n);
-double LevenbergMarquardt(
-	int parameterSize, double *parameters, double *parametersMin, double *parametersMax,
-	double differentiationStepSize, double lambda, double minSquares, int maxIterations,
-	double (*f)( int, const double*, double*, void *), void *f_data
-	);
-double LineSearch(
-	int parameterSize, double *parameters, double *parametersMin, double *parametersMax,
-	double differentiationStepSize, double lambda, double minSquares, int maxIterations,
-	double (*f)( int, const double*, double*, void *), void *f_data
-	);
+#include "statistics.hpp"
+#include "matrix.hpp"
+#include "optimization.hpp"
 
 template <class T>
 void LHS( T **x, int n, int d){
@@ -27,7 +15,7 @@ void LHS( T **x, int n, int d){
 
 	for(int i=0;i<n;++i)
 		for(int j=0;j<d;++j)
-			x[i][j]=(i + RAND01_R( T, &seed)) / n;
+			x[i][j]=(i + unifrnd( T, &seed)) / n;
 
 	for (int i=n-1; i>=0; --i)
 		for(int j=0;j<d;++j)
@@ -45,7 +33,7 @@ void LHS( T **x, T *lb, T *ub, int n, int d){
 
 	for(int i=0;i<n;++i)
 		for(int j=0;j<d;++j)
-			x[i][j]=(i + RAND01_R( T, &seed)) / n * (ub[j]-lb[j]) + lb[j];
+			x[i][j]=(i + unifrnd( T, &seed)) / n * (ub[j]-lb[j]) + lb[j];
 
 	for (int i=n-1; i>=0; --i)
 		for(int j=0;j<d;++j)
@@ -74,42 +62,7 @@ optimoptions getoptions(){
 	return options;
 }
 #include <math.h>
-void stdmean( double *x, double *dx, double d, int n, double &SEM_x, double &mean_x){
-	mean_x = 0;
-	double s2_x  = 0;
-	SEM_x = 0;
 
-	if( dx)
-		for( int i=0; i<n; i++){
-			mean_x +=    (x[i] + dx[i]*d);
-			s2_x   += pow(x[i] + dx[i]*d, 2.);
-		}
-	else
-		for( int i=0; i<n; i++){
-			mean_x += x[i];
-			s2_x   += x[i]*x[i];
-		}
-
-	mean_x = mean_x / (double) n;
-	s2_x   = s2_x   / (double) n - mean_x*mean_x;
-	SEM_x  = sqrt(s2_x / (double) n);
-}
-
-void mean( double **x, int d, int n, double *&mean_x){
-
-    for( int id=0; id<d; id++){
-    	mean_x[id] = 0;
-    	for( int i=0; i<n; i++)
-    		mean_x[id] += x[id][i];
-    	mean_x[id] = mean_x[id] / (double) n;
-    }
-}
-double mean( double *x, int n){
-	double mean_x = 0;
-	for( int i=0; i<n; i++)
-		mean_x += x[i];
-	return mean_x / (double) n;
-}
 bool inbound( double *x, double *lb, double *ub, int d)
 {
 	for( int i=0; i<d; i++)
@@ -179,7 +132,7 @@ void gradientDecent( double *x0, double *lb, double *ub, int dim, double (*func)
 			lastX[i] = x0[i];
 	else
 		for( int i=0; i<dim; i++){
-			double beta = RAND01_R(double, &seed);
+			double beta = unifrnd(double, &seed);
 			lastX[i] = ub[i]*beta + lb[i]*(1-beta); //(ub[i]+lb[i])/2.;
 			//lastX[i] = ub[i]*7/23. + lb[i]*16/23.; //(ub[i]+lb[i])/2.;
 		}
@@ -747,51 +700,11 @@ double linearRegression( double *x, double *y, int n, double *theta, int ntheta)
 			);
 }
 
-double **allocMatrix( int n, int m){
-	double **A = (double**)malloc( n*sizeof(double**));
-	for( int i=0; i<n; i++)
-		A[i] = (double*)malloc( m*sizeof(double*));
-	return A;
-}
-void freeMatrix( double **A, int n){
-	for( int i=0; i<n; i++)
-		free(A[i]);
-	free( A);
-}
-/*template <class T>
-void printMatrix( T** &A, int n, int m)
-{
-	for( int i=0; i<n; i++){
-		for( int j=0; j<m; j++){
-			fprintf( stderr, "%10.2lf ", A[i][j]);
-		}
-		fprintf( stderr, "\n");
-	}
-}*/
 
 #include "lik.ipp"
 #include "cov.ipp"
 #include "gp.ipp"
 
-void findmin( double *x, int n, double &o_min, int &o_idx){
-	o_min = x[0];
-	o_idx = 0;
-	for( int i=1; i<n; i++)
-		if( o_min > x[i]){
-			o_min = x[i];
-			o_idx = i;
-		}
-}
-
-void findmax( double *x, int n, double &max, int &idx){
-	max = x[0];
-	idx = 0;
-	for( int i=1; i<n; i++)
-		if( max < x[i]){
-			max = x[i];
-			idx = i;
-		}
-}
 
 typedef struct{
 	double* f;
@@ -909,15 +822,13 @@ void getHyperParameters( double *X, double *y, int n, double *hyp){
 			maxdist_y = fmax( maxdist_y, fabs(y[i]-y[j]) );
 		}
 
-	for( int i=0; i<n; i++){
-		max_mindist_x = fmax( mindist_x[i], max_mindist_x);
-		mean_y += y[i];
-		min_y = fmin( min_y, y[i]);
-	}
-	mean_y /= (double)n;
+	mean_y = mean(y, n);
+	min_y  = min (y, n);
+	max_mindist_x = sqrt( max( mindist_x, n) );
+
 
 	hyp[0] = -5;
-	hyp[1] = log10( sqrt( max_mindist_x))+0.5;
+	hyp[1] = log10( max_mindist_x)+1;
 	hyp[2] = log10( maxdist_y)+2;
 	hyp[3] = min_y;
 
@@ -933,36 +844,50 @@ void getHyperParameters( double *X, double *y, int n, double *hyp){
 	_mean /= (double)n;
 }*/
 
-int compare_dbl (const void * a, const void * b)
-{
-   return ( *(double*)a - *(double*)b );
-}
-void median( double **x, int d, int n, double *&median_x){
 
-    for( int id=0; id<d; id++){
-    	double x_sorted[n];
-    	for( int i=0; i<n; i++)	x_sorted[i] = x[id][i];
-    	qsort( x_sorted, n, sizeof(double), compare_dbl);
-    	median_x[id] = x_sorted[n/2];
-    }
-}
 
-double median( double *x, int n){
+#include <float.h>
+void summaryStatistics( double (*func) (int, const double*, double*, void*),
+		double *x, int dim, int n,
+		double &mean, double &s2
+	){
+	mean = 0;
+	s2 = 0;
+	for( int j=0; j<n; j++){
+		double Y = (*func) ( dim, x, 0,    0);
+		mean += Y;
+		s2 += Y*Y;
+	}
 
-	double x_sorted[n];
-	for( int i=0; i<n; i++)	x_sorted[i] = x[i];
-	qsort( x_sorted, n, sizeof(double), compare_dbl);
-
-    return x_sorted[n/2];
+	mean /= (double) n;
+	s2 = fmax( s2 / (double) n - mean*mean, 0);
+	s2 = sqrt( s2 / (double) n); // STANDARD ERROR OF MEAN
 }
 
-double mad( double *x, int n){
-	double r[n];
-	double median_x = median( x, n);
-	for( int i=0; i<n; i++)
-		r[i] = fabs( x[i] - median_x);
-	return median( r, n);
+void getAlphaBounds( double *x0, double *v, double *lb, double *ub, int dim, double &alpha_lb, double &alpha_ub){
+	double alpha;
+	alpha_lb =-DBL_MAX;
+	alpha_ub = DBL_MAX;
+	for( int d=0; d<dim; d++)
+	if(v[d]!=0){
+		alpha =  (lb[d] - x0[d]) / -v[d];
+		if( alpha < 0)
+			alpha_lb = fmax( alpha_lb, alpha);
+		else
+			alpha_ub = fmin( alpha_ub, alpha);
+
+		alpha =  (ub[d] - x0[d]) / -v[d];
+		if( alpha < 0)
+			alpha_lb = fmax( alpha_lb, alpha);
+		else
+			alpha_ub = fmin( alpha_ub, alpha);
+	}
+
+
+
+	fprintf( stderr, "alpha %c [%.3e, %.3e]\n", 0xE2, alpha_lb, alpha_ub);
 }
+
 
 void getGradient( double (*func) (int, const double*, double*, void*), double *x, int dim, int maxit, double *&Mgrad){
 
@@ -1034,57 +959,7 @@ void getGradient( double (*func) (int, const double*, double*, void*), double *x
 	fprintf( stderr, "finish grad. estim. after %i iterations\nSEMy_dx=%.2e + SEMy=%.2e - fabs( My=%.2e-My_dx=%.2e)", it+1,
 		SEMy_dx[0], SEMy, My, My_dx[0]);
 }
-#include <float.h>
-void summaryStatistics( double (*func) (int, const double*, double*, void*),
-		double *x, int dim, int n,
-		double &mean, double &s2
-	){
-	mean = 0;
-	s2 = 0;
-	for( int j=0; j<n; j++){
-		double Y = (*func) ( dim, x, 0,    0);
-		mean += Y;
-		s2 += Y*Y;
-	}
 
-	mean /= (double) n;
-	s2 = fmax( s2 / (double) n - mean*mean, 0);
-	s2 = sqrt( s2 / (double) n); // STANDARD ERROR OF MEAN
-}
-
-void getAlphaBounds( double *x0, double *v, double *lb, double *ub, int dim, double &alpha_lb, double &alpha_ub){
-	double alpha;
-	alpha_lb =-DBL_MAX;
-	alpha_ub = DBL_MAX;
-	for( int d=0; d<dim; d++)
-	if(v[d]!=0){
-		alpha =  (lb[d] - x0[d]) / -v[d];
-		if( alpha < 0)
-			alpha_lb = fmax( alpha_lb, alpha);
-		else
-			alpha_ub = fmin( alpha_ub, alpha);
-
-		alpha =  (ub[d] - x0[d]) / -v[d];
-		if( alpha < 0)
-			alpha_lb = fmax( alpha_lb, alpha);
-		else
-			alpha_ub = fmin( alpha_ub, alpha);
-	}
-
-
-
-	fprintf( stderr, "alpha %c [%.3e, %.3e]\n", 0xE2, alpha_lb, alpha_ub);
-}
-void BoxMuller( double *rnd, int n, unsigned int *p_seed)
-{
-	//srand( time(NULL));
-	for( int i=0; i<n; i+=2){
-		double u1=RAND01_R(double, p_seed), u2=RAND01_R(double, p_seed);
-		rnd[i]   = sqrt(-2*log(u1))*cos(2*M_PI*u2);
-		if(i+1<n)
-		rnd[i+1] = sqrt(-2*log(u1))*sin(2*M_PI*u2);
-	}
-}
 void gplinesearch( double *x0, double *lb, double *ub, int dim, double (*func) (int, const double*, double*, void*), optimoptions *options, double *sol)
 {
 /*	{
@@ -1122,7 +997,7 @@ exit(0);*/
 	double Smean = 1;
 
 	// DECLARE VARIABLES
-	double **popX = allocMatrix( options->MaxFunEvals, dim);
+	double **popX = allocMatrix<double>( options->MaxFunEvals, dim);
 	double  *popY = (double*)malloc( options->MaxFunEvals*sizeof(double));
 	double  *popS2= (double*)malloc( options->MaxFunEvals*sizeof(double));
 	int      popSize = 0;
@@ -1236,11 +1111,11 @@ exit(0);*/
 
 			double dx = 1e-2;
 			int    _n = 1000;
-			double **_x = allocMatrix(_n, dim);
+			double **_x = allocMatrix<double>(_n, dim);
 			double _y[_n];
 			for( int i=0; i<_n; i++){
 				for( int d=0; d<dim; d++){
-					_x[i][d] = sol[d] + dx*(RAND01_R( double, &seed)*2-1 );
+					_x[i][d] = sol[d] + dx*(unifrnd( double, &seed)*2-1 );
 				}
 				_y[i] = (*func)( dim, _x[i], 0,0);
 			}
@@ -1341,7 +1216,7 @@ exit(0);*/
 				else
 					findmax( p_alpha_test_s2, alpha_test_size, min_y, idx);
 				alpha_x[gp_it] = p_alpha_test_x[idx];
-				fprintf( stderr, " - - - - > min(x=%f, i=%i) = %f\n", idx, p_alpha_test_x[idx], p_alpha_test_y[idx]);
+				fprintf( stderr, " - - - - > min(x=%f, i=%i) = %f\n", p_alpha_test_x[idx], idx, p_alpha_test_y[idx]);
 
 				// evaluate model
 				for( int d=0; d<dim; d++){
@@ -1459,7 +1334,7 @@ exit(0);*/
 
 void gpopt( double *x0, double *lb, double *ub, int dim, double (*func) (int, const double*, double*, void*), optimoptions *options, double *sol)
 	{
-	double **popX = allocMatrix( options->MaxFunEvals, dim);
+	double **popX = allocMatrix<double>( options->MaxFunEvals, dim);
 	double  *popY = (double*)malloc( options->MaxFunEvals*sizeof(double));
 	double  *popS2= (double*)malloc( options->MaxFunEvals*sizeof(double));
 	int      popSize = 0;
@@ -1523,8 +1398,8 @@ void gpopt( double *x0, double *lb, double *ub, int dim, double (*func) (int, co
 		if(false){
 			int nsols=10;
 			int dhyp=4;
-			double **sols = allocMatrix( nsols, dhyp);
-			double **hyp0 = allocMatrix( nsols, dhyp);
+			double **sols = allocMatrix<double>( nsols, dhyp);
+			double **hyp0 = allocMatrix<double>( nsols, dhyp);
 			double   lik[nsols];
 			LHS( hyp0, hlb, hub, nsols, dhyp);
 
@@ -1565,7 +1440,7 @@ void gpopt( double *x0, double *lb, double *ub, int dim, double (*func) (int, co
 			int x[2];
 			int nx[2] = {100, 100};
 			int      new_popSize = nx[0]*nx[1];
-			double **new_popX = allocMatrix( new_popSize, dim);
+			double **new_popX = allocMatrix<double>( new_popSize, dim);
 			double  *new_popY = (double*)malloc( new_popSize*sizeof(double));
 			double  *new_popS2= (double*)malloc( new_popSize*sizeof(double));
 
@@ -1696,60 +1571,6 @@ void gpopt( double *x0, double *lb, double *ub, int dim, double (*func) (int, co
 	fclose(fp);
 	fclose(fp_pred);
 }
-void getGradient(
-		int parameterSize, double *parameters, double *gradient,
-		double (*f)( int, const double*, double*, void *), void *f_data,
-		double dx)
-{
-	double yn = f( parameterSize, parameters, 0, f_data),
-		   yn1;
-
-	for( int i=0; i<parameterSize; i++){
-		double delta = dx*fmax( fabs( parameters[i]), 1);
-
-		parameters[i] += delta; yn1 = f( parameterSize, parameters, 0, f_data);
-		gradient[i] = (yn1 - yn) / delta;
-		parameters[i] -= delta;
-
-	}
-}
-void getHessian(
-		int parameterSize, double *parameters, double **H,
-		double (*f)( int, const double*, double*, void *), void *f_data,
-		double dx)
-{
-	double y = f( parameterSize, parameters, 0, f_data),
-		   yi, yj, yij, yii;
-
-	for( int i=0; i<parameterSize; i++){
-		double deltai = dx*fmax( fabs( parameters[i]), 1);
-
-		for( int j=i+1; j<parameterSize; j++){
-			double deltaj = dx*fmax( fabs( parameters[j]), 1);
-
-			parameters[i] += deltai;
-			yi = f( parameterSize, parameters, 0, f_data);
-
-			parameters[j] += deltaj;
-			yij = f( parameterSize, parameters, 0, f_data);
-
-			parameters[i] -= deltai;
-			yj = f( parameterSize, parameters, 0, f_data);
-
-			parameters[j] -= deltaj;
-			H[i][j] = H[j][i] = (y - yi - yj + yij) / (deltai*deltaj);
-		}
-
-		parameters[i] += deltai;
-		yi = f( parameterSize, parameters, 0, f_data);
-		parameters[i] += deltai;
-		yii = f( parameterSize, parameters, 0, f_data);
-		parameters[i] -= 2*deltai;
-		H[i][i] = (y - 2*yi + yii) / (deltai*deltai);
-
-		//parameters[i] = xold;
-	}
-}
 
 /*void LevenbergMarquardt(
 	int sampleSize, double *sampleX, double *sampleY,
@@ -1856,271 +1677,7 @@ void getHessian(
 		fprintf(stderr, "%10.3e ", parameters[i]);
 	fprintf(stderr, "\n");
 }*/
-void solveLinearSystemB( double **A, double *b, double *x, int dim, double **B)
-{
-	int i, // index of equation
-	    j; // index of column
-	int k;
-	//double B[dim][dim];
-	//float **B = newMatrix( dim, dim);
 
-	// copy matrix
-	for( i=0; i<dim; i++){
-		for( j=0; j<dim; j++){
-			B[i][j] = A[i][j];
-	//		printf("%lf  ", B[i][j]);
-		}
-	//	printf("| %lf\n", b[i]);
-	}
 
-	// solving the linear system
 
-	// forward reduction
-	for( k=0; k<dim; k++){
-		//printf("forward reduction: line %i/%i!\n", k+1, dim);
-		if(B[k][k]==0){
-			// find better line
-//			printf("looking for better line!\n");
-			for( i=k+1; i<dim && B[i][k]==0; i++);
-
-			// resort lines
-			if(i<dim && B[i][k]!=0){
-//				printf("resort!\n");
-				double temp;
-				for( j=k; j<dim; j++){
-					temp = B[i][j];
-					B[i][j] = B[k][j];
-					B[k][j] = temp;
-				}
-				temp = b[i];
-				b[i] = b[k];
-				b[k] = temp;
-			}
-		}
-		if(B[k][k]!=0){
-			// normalize first row
-			for( j=k+1; j<dim; j++)
-				B[k][j]=B[k][j]/B[k][k];
-			b[k]=b[k]/B[k][k];
-			B[k][k]=1.;
-
-			// reduce following rows
-			for( i=k+1; i<dim; i++){
-				for( j=k+1; j<dim; j++)
-					B[i][j]=B[i][j]-B[i][k]*B[k][j];
-				b[i]=b[i]+b[k]*-B[i][k];
-				B[i][k]=0;
-			}
-		}
-	}
-
-	/*printf("----------------------------\n");
-	for( i=0; i<dim; i++){
-		for( j=0; j<dim; j++){
-			printf("%lf  ", B[i][j]);
-		}
-		printf("| %lf\n", b[i]);
-	}//*/
-
-	// backward reduction
-	for( k=dim-1; k>=0; k--){
-		if( B[k][k]!=0)
-		for( i=0; i<k; i++){
-			b[i]=b[i]+b[k]*-B[i][k];
-			B[i][k]=0;
-		}
-	}
-
-	/*printf("----------------------------\n");
-	for( i=0; i<dim; i++){
-		for( j=0; j<dim; j++){
-			printf("%lf  ", B[i][j]);
-		}
-		printf("| %lf\n", b[i]);
-	}//*/
-
-	// copy solution
-	for( i=0; i<dim; i++)
-		x[i] = b[i];
-		//x[i] = B[i][i];
-}
-void solveLinearSystem( double **A, double *b, double *x, int dim)
-{
-	double **B = allocMatrix( dim, dim);
-	if( B == NULL){
-		exit( 0);
-	}
-	solveLinearSystemB( A, b, x, dim, B);
-	freeMatrix( B, dim);
-}
-void printVector( double *x, int m, const char *fmt = "%5.2e "){
-
-	for( int j=0; j<m; j++)
-		fprintf( stderr, fmt, x[j]);
-	fprintf( stderr, "\n");
-}
-
-double LevenbergMarquardt(
-	int parameterSize, double *parameters, double *parametersMin, double *parametersMax,
-	double differentiationStepSize, double lambda, double minSquares, int maxIterations,
-	double (*f)( int, const double*, double*, void *), void *f_data
-	)
-{
-	double **H = allocMatrix( parameterSize, parameterSize);
-	double **A = allocMatrix( parameterSize, parameterSize);
-	double b[parameterSize];
-	double dparameters[parameterSize];
-	double gradient[parameterSize];
-	double initialGuess[parameterSize];
-	for (int i = 0; i < parameterSize; i++)
-		initialGuess[i] = parameters[i];
-
-	double newS = (*f)(parameterSize, parameters, 0, f_data),
-		  lastS = newS+minSquares;
-	bool stop=false;
-
-	for( int iter=0; iter<maxIterations && !stop; iter++){
-		lambda=0;
-		//fprintf(stderr, "S(%i) = %e\n", lastS, iter);
-		//fprintf(stderr, "par\n"); printVector( dparameters, parameterSize, "%5.2e ");
-
-		// get gradient
-		getGradient(parameterSize, parameters, gradient,
-					f, f_data,
-					differentiationStepSize);
-		//fprintf( stderr, "grad: %.2e, %.2e\n", gradient[0], gradient[1]);
-
-		// get Hessian
-		getHessian(	parameterSize, parameters, H,
-					f, f_data,
-					differentiationStepSize);
-		//printMatrix( H, parameterSize, parameterSize);
-		//fprintf(stderr, "H\n"); printMatrix( H, parameterSize, parameterSize);
-		//fprintf(stderr, "grad\n"); printVector( gradient, parameterSize, "%5.2e ");
-
-		// Construct Linear System: H*dx = grad
-		for (int i = 0; i < parameterSize; i++) {
-
-			// Levenberg
-			for (int j = 0; j < parameterSize; j++)
-				A[i][j] = H[i][j];
-				//A[i][j] = gradient[i] * gradient[j];
-
-			// Marquardt
-			A[i][i] *= (1. + lambda);
-
-			b[i] = -gradient[i];
-		}
-
-		// Normalize
-		for (int i = 0; i < parameterSize; i++) if(A[i][i]!=0){
-			double Aii = A[i][i];
-			for (int j = 0; j < parameterSize; j++)
-				A[i][j] /= Aii;
-			b[i] /= Aii;
-		}
-
-		// Solve Linear System
-		solveLinearSystem(A, b, dparameters, parameterSize);
-
-		// Update Parameters
-		for (int i = 0; i < parameterSize; i++)
-			parameters[i] += dparameters[i];
-
-		lastS = newS;
-		newS = (*f)(parameterSize, parameters, 0, f_data);
-		if( fabs(lastS-newS) < minSquares)
-			stop = true;
-
-		if( isnan( newS) || isinf( newS)){
-			fprintf( stderr, "ERROR in LevenbergMarquardt: Score is %e\n", newS);
-			printVector( dparameters, parameterSize, "%5.2e ");
-			//exit( 0);
-			lambda += 1;
-			fprintf( stderr, "retray with bigger lamda = %f\n", lambda);
-			for (int i = 0; i < parameterSize; i++)
-						parameters[i] =initialGuess[i];
-		}
-
-		fprintf( stderr, "x: %.2e, %.2e, %.2e ->  %e\n", parameters[0], parameters[1], parameters[2], newS);
-	}
-
-	freeMatrix( H, parameterSize);
-	freeMatrix( A, parameterSize);
-
-	return newS;
-}
-
-double LineSearch(
-	int parameterSize, double *parameters, double *parametersMin, double *parametersMax,
-	double differentiationStepSize, double lambda, double minSquares, int maxIterations,
-	double (*f)( int, const double*, double*, void *), void *f_data
-	)
-{
-	double **H = allocMatrix( parameterSize, parameterSize);
-	double **A = allocMatrix( parameterSize, parameterSize);
-	double b[parameterSize];
-	double dparameters[parameterSize];
-	double gradient[parameterSize];
-	double initialGuess[parameterSize];
-	for (int i = 0; i < parameterSize; i++)
-		initialGuess[i] = parameters[i];
-
-	double newS = (*f)(parameterSize, parameters, 0, f_data),
-		  lastS = newS+minSquares;
-	bool stop=false;
-
-	for( int iter=0; iter<maxIterations && !stop; iter++){
-		// get gradient
-		getGradient(parameterSize, parameters, gradient,
-					f, f_data,
-					differentiationStepSize);
-
-		// Normalize Gradient
-		double abs_gradient = 0;
-		for( int i=0; i<parameterSize; i++){
-			abs_gradient += pow( gradient[i], 2);
-		}
-		abs_gradient = sqrt( abs_gradient);
-		for( int i=0; i<parameterSize; i++) if(abs_gradient>0)
-			gradient[i] /= abs_gradient;
-		fprintf( stderr, "grad: %.2e, %.2e\n", gradient[0], gradient[1]);
-
-		// Follow Line as long as improving
-		int pot=0;
-		do{
-			lastS = newS;
-			double distance = differentiationStepSize*pow(2, pot);
-			for (int i = 0; i < parameterSize; i++)	parameters[i] -= gradient[i]*distance;
-			newS = (*f)(parameterSize, parameters, 0, f_data);
-			fprintf( stderr, "x(%i): %.2e, %.2e, %.2e ->  %e\n", pot, parameters[0], parameters[1], parameters[2], newS);
-
-			for (int i = 0; i < parameterSize; i++)	parameters[i] += gradient[i]*distance;
-			pot++;
-		}while( newS < lastS /*&& inbound(parameters, parametersMin, parametersMax, parameterSize)*/);
-		pot--;
-		do{
-			pot--;
-			lastS = newS;
-			double distance = differentiationStepSize*pow(2, pot);
-			for (int i = 0; i < parameterSize; i++)	parameters[i] -= gradient[i]*distance;
-			newS = (*f)(parameterSize, parameters, 0, f_data);
-			fprintf( stderr, "x(%i): %.2e, %.2e, %.2e ->  %e\n", pot, parameters[0], parameters[1], parameters[2], newS);
-
-			for (int i = 0; i < parameterSize; i++)	parameters[i] += gradient[i]*distance;
-		}while( newS < lastS /*&& inbound(parameters, parametersMin, parametersMax, parameterSize)*/);
-		//pot++;
-
-		// Update Parameters
-		for (int i = 0; i < parameterSize; i++)
-			parameters[i] -= gradient[i]*differentiationStepSize*pow(2, pot);
-
-		fprintf( stderr, "x: %.2e, %.2e, %.2e ->  %e\n", parameters[0], parameters[1], parameters[2], newS);
-	}
-
-	freeMatrix( H, parameterSize);
-	freeMatrix( A, parameterSize);
-
-	return newS;
-}
 

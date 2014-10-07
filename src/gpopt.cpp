@@ -77,8 +77,45 @@ double tumorModel2x3(int n, const double *x, double *grad, void *my_func_data)
 
 
 
-
+#include "cov.hpp"
+#include "statistics.hpp"
 int main( int argc, char **argv){
+
+	// TEST
+	unsigned int p_seed=0;
+	int n=1000, d=1;
+	double x[n], y[n], *px = x, *py = y, *ps2=0;
+	FILE *_fp = fopen( "raw.dat", "w+");
+	for( int i=0; i<n; i++){
+		//x[i] = exp(-i/10.) * M_PI;
+		x[i] = i/(double)(n-1) * M_PI;
+		y[i] = (sin( -x[i]) + normrnd( &p_seed)*1e-1) * 1e5;
+		fprintf( _fp, "%e %e %e\n", x[i], y[i], 1e-1);
+	}
+	fclose( _fp);
+
+	int nt=1001;
+	double xt[nt], yt[nt], s2t[nt], *pxt = xt, *pyt = yt, *ps2t=s2t;
+	for( int i=0; i<nt; i++){
+			xt[i] = i/(double)(nt-1) * M_PI;
+	}
+
+	double hyp[4], *phyp = hyp;
+	getHyperParameters( x, y, n, hyp);
+	hyp[0] = -1 + 5;
+	hyp[1] += 2;
+	printVector( hyp, 4, "%.2e ");
+	evalVariance<double>(
+			px,  py,   ps2,  n,
+			pxt, pyt,  ps2t, nt,
+			d,
+			covMatern5, phyp);
+
+	for( int i=0; i<nt; i++){
+		printf( "%e %e %e\n", xt[i], yt[i], s2t[i]);
+		}
+	exit(0);
+	//
 
 	int dim = 10;
 	double x0[dim], lb[dim], ub[dim], sol[dim], sol_true[dim];
@@ -165,7 +202,7 @@ int main( int argc, char **argv){
 						offset_i, offset_j, i+2, j+2, sol_true[i], sol_true[j],
 						i*2+1, j*2+1, i*2+2, j*2+2);
 			if( i>j)
-				fprintf( fp, "set origin %f,%f; splot \"gpline.dat\"u %i:%i:%iw p\n", offset_i, offset_j, i+1, j+1, dim+2, dim+3);
+				fprintf( fp, "set origin %f,%f; splot \"gpline.dat\"u %i:%i:%iw p\n", offset_i, offset_j, i+1, j+1, dim+2);
 
 		}
 	}

@@ -1,13 +1,16 @@
 #ifndef MATRIX_IPP
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
+
+
 
 // Definition of a singular matrix
 #define SINGULAR 1e-16
 
 template <class T>
-T **newMatrix( int n, int m)
+T **allocMatrix( int n, int m)
 {
 	T **A = (T**) malloc( n*sizeof(T*));
 	for( int i=0; i<n; i++){
@@ -19,7 +22,7 @@ T **newMatrix( int n, int m)
 }
 
 template <class T>
-void deleteMatrix( T** &A, int n)
+void freeMatrix( T** &A, int n)
 {
 
 	for( int i=0; i<n; i++)
@@ -241,7 +244,7 @@ void invertGaussJordan( T** &a, T** &ainv, int n) {
 	FILE *fout = stdout;
 	int pivot = 1;
 
-	// ergŠnze die Matrix a um eine Einheitsmatrix (rechts anhŠngen)
+	// ergï¿½nze die Matrix a um eine Einheitsmatrix (rechts anhï¿½ngen)
 	/*for (i = 0; i < n; i++) {
 		for (j = 0; j < n; j++) {
 			a[i][n + j] = 0.0;
@@ -263,8 +266,8 @@ void invertGaussJordan( T** &a, T** &ainv, int n) {
 	// die einzelnen Eliminationsschritte
 	s = 0;
 	do {
-		// Pivotisierung vermeidet unnštigen Abbruch bei einer Null in der Diagnonalen und
-		// erhšht die Rechengenauigkeit
+		// Pivotisierung vermeidet unnï¿½tigen Abbruch bei einer Null in der Diagnonalen und
+		// erhï¿½ht die Rechengenauigkeit
 		Maximum = fabs(a[s][s]);
 		if (pivot) {
 			pzeile = s;
@@ -277,7 +280,7 @@ void invertGaussJordan( T** &a, T** &ainv, int n) {
 		fehler = (Maximum < Epsilon);
 
 		if (fehler)
-			break;           // nicht lšsbar
+			break;           // nicht lï¿½sbar
 
 		if (pivot) {
 			if (pzeile != s)  // falls erforderlich, Zeilen tauschen
@@ -334,7 +337,7 @@ void invertGaussJordan( T** &a, T** &ainv, int n) {
 		fprintf(fout, "Inverse: Matrix ist singulaer\n");
 		//return 0;
 	}
-	// Die angehŠngte Einheitsmatrix Matrix hat sich jetzt in die inverse Matrix umgewandelt
+	// Die angehï¿½ngte Einheitsmatrix Matrix hat sich jetzt in die inverse Matrix umgewandelt
 	// Umkopieren auf die Zielmatrix
 	/*for (i = 0; i < n; i++) {
 		for (j = 0; j < n; j++) {
@@ -356,7 +359,7 @@ void invertGaussJordan( T* &a, T* &ainv, int n) {
 	FILE *fout = stdout;
 	int pivot = 1;
 
-	// ergŠnze die Matrix a um eine Einheitsmatrix (rechts anhŠngen)
+	// ergï¿½nze die Matrix a um eine Einheitsmatrix (rechts anhï¿½ngen)
 	/*for (i = 0; i < n; i++) {
 		for (j = 0; j < n; j++) {
 			a[i][n + j] = 0.0;
@@ -378,8 +381,8 @@ void invertGaussJordan( T* &a, T* &ainv, int n) {
 	// die einzelnen Eliminationsschritte
 	s = 0;
 	do {
-		// Pivotisierung vermeidet unnštigen Abbruch bei einer Null in der Diagnonalen und
-		// erhšht die Rechengenauigkeit
+		// Pivotisierung vermeidet unnï¿½tigen Abbruch bei einer Null in der Diagnonalen und
+		// erhï¿½ht die Rechengenauigkeit
 		Maximum = fabs(a[s*n+s]);
 		if (pivot) {
 			pzeile = s;
@@ -392,7 +395,7 @@ void invertGaussJordan( T* &a, T* &ainv, int n) {
 		fehler = (Maximum < Epsilon);
 
 		if (fehler)
-			break;           // nicht lšsbar
+			break;           // nicht lï¿½sbar
 
 		if (pivot) {
 			if (pzeile != s)  // falls erforderlich, Zeilen tauschen
@@ -449,13 +452,122 @@ void invertGaussJordan( T* &a, T* &ainv, int n) {
 		fprintf(fout, "Inverse: Matrix ist singulaer\n");
 		//return 0;
 	}
-	// Die angehŠngte Einheitsmatrix Matrix hat sich jetzt in die inverse Matrix umgewandelt
+	// Die angehï¿½ngte Einheitsmatrix Matrix hat sich jetzt in die inverse Matrix umgewandelt
 	// Umkopieren auf die Zielmatrix
 	/*for (i = 0; i < n; i++) {
 		for (j = 0; j < n; j++) {
 			ainv[i][j] = a[i][n + j];
 		}
 	}*/
+}
+
+template <class T>
+void printVector( T *x, int m, const char *fmt = "%5.2e "){
+
+	for( int j=0; j<m; j++)
+		fprintf( stderr, fmt, x[j]);
+	fprintf( stderr, "\n");
+}
+
+template <class T>
+void solveLinearSystemB( T **A, T *b, T *x, int dim, T **B)
+{
+	int i, // index of equation
+	    j; // index of column
+	int k;
+	//double B[dim][dim];
+	//float **B = newMatrix( dim, dim);
+
+	// copy matrix
+	for( i=0; i<dim; i++){
+		for( j=0; j<dim; j++){
+			B[i][j] = A[i][j];
+	//		printf("%lf  ", B[i][j]);
+		}
+	//	printf("| %lf\n", b[i]);
+	}
+
+	// solving the linear system
+
+	// forward reduction
+	for( k=0; k<dim; k++){
+		//printf("forward reduction: line %i/%i!\n", k+1, dim);
+		if(B[k][k]==0){
+			// find better line
+//			printf("looking for better line!\n");
+			for( i=k+1; i<dim && B[i][k]==0; i++);
+
+			// resort lines
+			if(i<dim && B[i][k]!=0){
+//				printf("resort!\n");
+				T temp;
+				for( j=k; j<dim; j++){
+					temp = B[i][j];
+					B[i][j] = B[k][j];
+					B[k][j] = temp;
+				}
+				temp = b[i];
+				b[i] = b[k];
+				b[k] = temp;
+			}
+		}
+		if(B[k][k]!=0){
+			// normalize first row
+			for( j=k+1; j<dim; j++)
+				B[k][j]=B[k][j]/B[k][k];
+			b[k]=b[k]/B[k][k];
+			B[k][k]=1.;
+
+			// reduce following rows
+			for( i=k+1; i<dim; i++){
+				for( j=k+1; j<dim; j++)
+					B[i][j]=B[i][j]-B[i][k]*B[k][j];
+				b[i]=b[i]+b[k]*-B[i][k];
+				B[i][k]=0;
+			}
+		}
+	}
+
+	/*printf("----------------------------\n");
+	for( i=0; i<dim; i++){
+		for( j=0; j<dim; j++){
+			printf("%lf  ", B[i][j]);
+		}
+		printf("| %lf\n", b[i]);
+	}//*/
+
+	// backward reduction
+	for( k=dim-1; k>=0; k--){
+		if( B[k][k]!=0)
+		for( i=0; i<k; i++){
+			b[i]=b[i]+b[k]*-B[i][k];
+			B[i][k]=0;
+		}
+	}
+
+	/*printf("----------------------------\n");
+	for( i=0; i<dim; i++){
+		for( j=0; j<dim; j++){
+			printf("%lf  ", B[i][j]);
+		}
+		printf("| %lf\n", b[i]);
+	}//*/
+
+	// copy solution
+	for( i=0; i<dim; i++)
+		x[i] = b[i];
+		//x[i] = B[i][i];
+}
+
+template <class T>
+void solveLinearSystem( T **A, T *b, T *x, int dim)
+{
+	T **B = allocMatrix<T>( dim, dim);
+	if( B == NULL){
+		exit( 0);
+	}
+	solveLinearSystemB<T>( A, b, x, dim, B);
+	freeMatrix( B, dim);
 }
 
 #define MATRIX_IPP

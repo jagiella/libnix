@@ -5,10 +5,10 @@
 
 #include <gsl/gsl_sf_bessel.h>
 
-#include "matrix.ipp"
-#include "cov.ipp"
-#include "lik.ipp"
-#include "gp.ipp"
+#include "matrix.hpp"
+#include "cov.hpp"
+#include "lik.hpp"
+#include "gp.hpp"
 
 double rand01( double *x, int n)
 { return rand() / (double)RAND_MAX; }
@@ -37,11 +37,11 @@ void eval(
 	T (*covFunc) ( T* &, T* &, int &, T* &), double* &theta)
 {
 	// covariance
-	double **K = newMatrix<double>( n, n);
+	double **K = allocMatrix<double>( n, n);
 	covMatrix( K, x, n,d, covFunc, theta);
 	
 	// inverse of K
-	double** invK = newMatrix<double>( n, n);
+	double** invK = allocMatrix<double>( n, n);
 	inverseCholesky( K, invK, n);
 	
 	double tmp[n], *ptmp = tmp;
@@ -65,7 +65,7 @@ void eval(
 //	double (*covFunc) ( double* &, double* &, int &, double* &) = covSquaredExponential;//covMatern5;
 	double (*covFunc) ( double* &, double* &, int &, double* &) = covMatern5;
 
-	double **x = newMatrix<double>( n, d);
+	double **x = allocMatrix<double>( n, d);
 	double *f  = (double*) malloc( n*sizeof(double));
 	
 	double (*pFunc) (double*, int) = sum_of_sinus; //sum_of_squares;
@@ -121,14 +121,14 @@ void eval(
 	theta[2] = maxtheta[2];
 
 	int nnew = 1000;
-	/*double **xnew = newMatrix<double>(nnew,d);
+	/*double **xnew = allocMatrix<double>(nnew,d);
 	for( int i=0; i<nnew; i++)
 		for( int j=0; j<d; j++)
 			xnew[i][j] = rand() / (double)RAND_MAX;
 	 * /
 
 	int nx=100, ny=(d==1?1:100); nnew = nx*ny;
-	double **xnew = newMatrix<double>(nnew,d);
+	double **xnew = allocMatrix<double>(nnew,d);
 	switch(d){
 	case 1:
 		for( int ix=0; ix<nx; ix++)

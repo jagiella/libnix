@@ -124,7 +124,8 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libnix_la_LIBADD =
-am_libnix_la_OBJECTS = gp.lo model.lo
+am_libnix_la_OBJECTS = gp.lo model.lo hash.lo statistics.lo \
+	optimization.lo
 libnix_la_OBJECTS = $(am_libnix_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -137,6 +138,9 @@ PROGRAMS = $(bin_PROGRAMS)
 am_nix_abc_OBJECTS = abc.$(OBJEXT)
 nix_abc_OBJECTS = $(am_nix_abc_OBJECTS)
 nix_abc_DEPENDENCIES = libnix.la
+nix_abc_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
+	$(CXXFLAGS) $(nix_abc_LDFLAGS) $(LDFLAGS) -o $@
 am_nix_gp_OBJECTS = gpopt.$(OBJEXT)
 nix_gp_OBJECTS = $(am_nix_gp_OBJECTS)
 nix_gp_DEPENDENCIES = libnix.la
@@ -324,10 +328,11 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
 lib_LTLIBRARIES = libnix.la
 nix_abc_SOURCES = abc.cpp
-nix_abc_LDADD = -lgsl -lgslcblas -lgomp libnix.la
+nix_abc_LDADD = -lgsl -lgslcblas  libnix.la
+nix_abc_LDFLAGS = -fopenmp
 nix_gp_SOURCES = gpopt.cpp
-nix_gp_LDADD = -lgsl -lgslcblas -lgomp libnix.la
-libnix_la_SOURCES = gp.cpp model.cpp
+nix_gp_LDADD = -lgsl -lgslcblas libnix.la
+libnix_la_SOURCES = gp.cpp model.cpp hash.cpp statistics.cpp optimization.cpp
 libnix_la_LDFLAGS = -version-info 0:0:0
 all: all-am
 
@@ -453,7 +458,7 @@ clean-binPROGRAMS:
 
 nix-abc$(EXEEXT): $(nix_abc_OBJECTS) $(nix_abc_DEPENDENCIES) $(EXTRA_nix_abc_DEPENDENCIES) 
 	@rm -f nix-abc$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(nix_abc_OBJECTS) $(nix_abc_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(nix_abc_LINK) $(nix_abc_OBJECTS) $(nix_abc_LDADD) $(LIBS)
 
 nix-gp$(EXEEXT): $(nix_gp_OBJECTS) $(nix_gp_DEPENDENCIES) $(EXTRA_nix_gp_DEPENDENCIES) 
 	@rm -f nix-gp$(EXEEXT)
@@ -468,7 +473,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/abc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gpopt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/model.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optimization.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/statistics.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
