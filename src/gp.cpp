@@ -58,7 +58,7 @@ void eval(
 }
 
 
-int main()
+/*int main()
 {
 	int n=40;
 	int d=2;
@@ -125,7 +125,7 @@ int main()
 	for( int i=0; i<nnew; i++)
 		for( int j=0; j<d; j++)
 			xnew[i][j] = rand() / (double)RAND_MAX;
-	 */
+	 * /
 
 	int nx=100, ny=(d==1?1:100); nnew = nx*ny;
 	double **xnew = newMatrix<double>(nnew,d);
@@ -150,7 +150,7 @@ int main()
 		x,    f,    n,
 		xnew, fnew, nnew,
 		d,
-		covFunc, ptheta);*/
+		covFunc, ptheta);* /
 	evalVariance( // TODO: integrate uncertainty s2
 		x,    f,     0,      n,
 		xnew, fnew, s2new, nnew,
@@ -172,7 +172,7 @@ int main()
 	}
 	fclose(fp);
 	return 0;	
-}
+}*/
 
 #ifdef MATLAB
 

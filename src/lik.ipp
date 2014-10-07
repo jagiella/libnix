@@ -2,7 +2,7 @@
 
 #include <math.h>
 #include <float.h>
-#include "../util/matrix.ipp"
+#include "matrix.ipp"
 #include "cov.ipp"
 #include "mean.ipp"
 

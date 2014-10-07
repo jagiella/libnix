@@ -404,7 +404,7 @@ double myfunckde(int n, const double *x, double *grad, void *my_func_data)
 }
 
 
-#include "../model/model.hpp"
+#include "model.hpp"
 double myfunc3(int n, const double *x, double *grad, void *my_func_data)
 {
 	double parv1[] = {0, 1/24., 100,   50, 0.25,   0.0033, 0.0005, 0.003};

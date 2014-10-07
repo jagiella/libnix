@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "../util/matrix.ipp"
+#include "matrix.ipp"
 #include "cov.ipp"
 //#include "mex.h"
 
