@@ -528,8 +528,8 @@ double linregnoise( int d, const double *g, double *grad, void *my_func_data)
 			break;
 		case 2: // log-normal distribution
 			if( y[i] > yavg){
-				e = log(y[i] - yavg);
-				p = log(2*M_PI*s2*y[i]*y[i]) + pow( e, 2) / s2;
+				e = log(y[i]-yavg);
+				p = log(2*M_PI*s2*pow(y[i]-yavg, 2)) + pow( e, 2) / s2;
 			}else{
 				e = (y[i] - yavg);
 				p = pow( e, 2) * 1e1;
@@ -960,6 +960,8 @@ void getGradient( double (*func) (int, const double*, double*, void*), double *x
 		SEMy_dx[0], SEMy, My, My_dx[0]);
 }
 
+
+#include "gp.hpp"
 void gplinesearch( double *x0, double *lb, double *ub, int dim, double (*func) (int, const double*, double*, void*), optimoptions *options, double *sol)
 {
 /*	{
@@ -1041,7 +1043,7 @@ exit(0);*/
 
 		// ESTIMATE GRADIENT
 		double Mgrad[dim], *pMgrad = Mgrad;
-		switch( 2){
+		switch( 5){
 		case 3:
 			for( int i=0; i<dim; i++)
 				Mgrad[i] = ( iter % dim == i ? 1. : 0) * ((iter/dim) % 2 ? -1 : 1);
@@ -1141,6 +1143,52 @@ exit(0);*/
 			dplane( sol, dim, multiregpar, order, Mgrad);
 		}break;
 
+		case 5:{ 			// Hyper-cube sampling & Gaussprocess approximation
+			int _n=200;
+			double **_x = allocMatrix<double>( _n, dim );
+			double _lb[_n];
+			double _ub[_n];
+			double _y[_n];
+			for( int i=0; i<_n; i++){
+				_lb[i] = sol[i] - 1e-1;
+				_ub[i] = sol[i] + 1e-1;
+			}
+			LHS( _x, _lb, _ub, _n, dim);
+			for( int i=0; i<_n; i++)
+				_y[i] = (*func)( dim, _x[i], 0,0);
+			double hyp[4];
+			getHyperParameters( _x, _y, _n, dim, hyp);
+			hyp[0] = -1;
+			hyp[1] = -1;
+			//hyp[2] = 1;
+
+			double *pMgrad = Mgrad;
+			evalGradientSparse<double>(
+					_x, _y,   0,  _n,
+					&sol, &pMgrad, 1,
+					dim,
+					covMatern5, hyp);
+
+			double _yt[_n];
+			evalVarianceSparse<double>(
+					_x, _y,  0,  _n,
+					_x, _yt, 0,   _n,
+					dim,
+					covMatern5, hyp);
+
+			char filename[1024];
+			FILE *fp;
+			for( int d=0; d<dim; d++){
+				sprintf( filename, "linreg%i.dat", d);
+				fp = fopen( filename, "w+");
+				for( int i=0; i<_n; i++){
+					fprintf( fp, "%.12e %.12e %.12e %.12e\n", _x[i][d], _y[i], (_x[i][d]-sol[d])*pMgrad[d] + solY, _yt[i]);
+				}
+				fclose( fp);
+			}
+
+			freeMatrix(_x, _n );
+		}break;
 		}
 
 		// NORMALIZE GRADIENT

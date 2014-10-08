@@ -81,15 +81,20 @@ double tumorModel2x3(int n, const double *x, double *grad, void *my_func_data)
 #include "statistics.hpp"
 int main( int argc, char **argv){
 
+
+	//exit(0);
+
 	// TEST
-	unsigned int p_seed=0;
+/*	unsigned int p_seed=0;
+	double sn2 = 1e-1;
 	int n=1000, d=1;
 	double x[n], y[n], *px = x, *py = y, *ps2=0;
 	FILE *_fp = fopen( "raw.dat", "w+");
 	for( int i=0; i<n; i++){
 		//x[i] = exp(-i/10.) * M_PI;
-		x[i] = i/(double)(n-1) * M_PI;
-		y[i] = (sin( -x[i]) + normrnd( &p_seed)*1e-1) * 1e5;
+		//x[i] = i/(double)(n-1) * M_PI;
+		x[i] = unifrnd(double, &p_seed) * M_PI;
+		y[i] = sin( -x[i]) * 1e5 + normrnd( &p_seed)*sn2;
 		fprintf( _fp, "%e %e %e\n", x[i], y[i], 1e-1);
 	}
 	fclose( _fp);
@@ -102,10 +107,14 @@ int main( int argc, char **argv){
 
 	double hyp[4], *phyp = hyp;
 	getHyperParameters( x, y, n, hyp);
-	hyp[0] = -1 + 5;
-	hyp[1] += 2;
+	//hyp[0] = -1 + 5;
+	hyp[1] += 1;
+	hyp[1] += 0;
+	hyp[0] = log(sn2);
+	//hyp[1] = -0;
 	printVector( hyp, 4, "%.2e ");
-	evalVariance<double>(
+	evalVarianceSparse<double>(
+	//evalVariance<double>(
 			px,  py,   ps2,  n,
 			pxt, pyt,  ps2t, nt,
 			d,
@@ -116,7 +125,7 @@ int main( int argc, char **argv){
 		}
 	exit(0);
 	//
-
+*/
 	int dim = 10;
 	double x0[dim], lb[dim], ub[dim], sol[dim], sol_true[dim];
 	optimoptions options = getoptions();

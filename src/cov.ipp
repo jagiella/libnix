@@ -99,6 +99,9 @@ T covMatern5( T* &x1, T* &x2, int &d, T* &theta)
 			assert( l>0);
 
 			T t = sqrt(2*nu)*dist / l;
+
+			//return sf2*( t*t < 1 ?  1-t*t : 0);
+
 			//fprintf( stderr, "covMatern5 = %e, l=%e, sf2=%e, dist=%e\n", sf2*(1 + t*(1+t/3))*exp(-t), l, sf2, dist);
 			if(dist>0 && !isnan(t) && !isinf(t)){
 				return sf2*(1 + t*(1+t/3))*exp(-t);
@@ -173,6 +176,27 @@ void covMatrix( T** &K, T* &X, int &n, int &d, T (*covFunc) ( T* &, T* &, int &,
 	}
 }
 
+#include "SparseMatrix.hpp"
+template <class T>
+void covMatrixSparse( SparseMatrix<T> *K, T* &X, int &n, int &d, T (*covFunc) ( T* &, T* &, int &, T* &), T* &theta)
+{
+	for( int i=0; i<n; i++){
+		// covariance of row i with all other rows
+		T* pXi = &X[i*d];
+		for( int j=i; j<n; j++){
+			T* pXj = &X[j*d];
+			T value = covFunc(pXi, pXj, d, theta );
+
+			if( fabs(value) > 1e-1){
+				K->set( i, j, value);
+				K->set( j, i, value);
+				fprintf( stderr, "add %e at (%i,%i)\n", value, i,j);
+			}else{
+				fprintf( stderr, "ignore zero entry at (%i,%i)\n", i,j);
+			}
+		}
+	}
+}
 
 
 #define COV_IPP

@@ -125,7 +125,7 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libnix_la_LIBADD =
 am_libnix_la_OBJECTS = gp.lo model.lo hash.lo statistics.lo \
-	optimization.lo
+	optimization.lo Mathematix.lo
 libnix_la_OBJECTS = $(am_libnix_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -144,6 +144,9 @@ nix_abc_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 am_nix_gp_OBJECTS = gpopt.$(OBJEXT)
 nix_gp_OBJECTS = $(am_nix_gp_OBJECTS)
 nix_gp_DEPENDENCIES = libnix.la
+nix_gp_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
+	$(CXXFLAGS) $(nix_gp_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -332,7 +335,8 @@ nix_abc_LDADD = -lgsl -lgslcblas  libnix.la
 nix_abc_LDFLAGS = -fopenmp
 nix_gp_SOURCES = gpopt.cpp
 nix_gp_LDADD = -lgsl -lgslcblas libnix.la
-libnix_la_SOURCES = gp.cpp model.cpp hash.cpp statistics.cpp optimization.cpp
+nix_gp_LDFLAGS = -fopenmp
+libnix_la_SOURCES = gp.cpp model.cpp hash.cpp statistics.cpp optimization.cpp Mathematix.cpp
 libnix_la_LDFLAGS = -version-info 0:0:0
 all: all-am
 
@@ -462,7 +466,7 @@ nix-abc$(EXEEXT): $(nix_abc_OBJECTS) $(nix_abc_DEPENDENCIES) $(EXTRA_nix_abc_DEP
 
 nix-gp$(EXEEXT): $(nix_gp_OBJECTS) $(nix_gp_DEPENDENCIES) $(EXTRA_nix_gp_DEPENDENCIES) 
 	@rm -f nix-gp$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(nix_gp_OBJECTS) $(nix_gp_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(nix_gp_LINK) $(nix_gp_OBJECTS) $(nix_gp_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -470,6 +474,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Mathematix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/abc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gpopt.Po@am__quote@
