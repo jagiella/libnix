@@ -9,41 +9,7 @@
 #include "matrix.hpp"
 #include "optimization.hpp"
 
-template <class T>
-void LHS( T **x, int n, int d){
-	unsigned int seed = 0;
 
-	for(int i=0;i<n;++i)
-		for(int j=0;j<d;++j)
-			x[i][j]=(i + unifrnd( T, &seed)) / n;
-
-	for (int i=n-1; i>=0; --i)
-		for(int j=0;j<d;++j)
-		{
-			int ii = rand_r( &seed) % (i+1);
-		    T temp = x[i ][j];
-		    x[i ][j]    = x[ii][j];
-		    x[ii][j]    = temp;
-		}
-}
-
-template <class T>
-void LHS( T **x, T *lb, T *ub, int n, int d){
-	unsigned int seed = 0;
-
-	for(int i=0;i<n;++i)
-		for(int j=0;j<d;++j)
-			x[i][j]=(i + unifrnd( T, &seed)) / n * (ub[j]-lb[j]) + lb[j];
-
-	for (int i=n-1; i>=0; --i)
-		for(int j=0;j<d;++j)
-		{
-			int ii = rand_r( &seed) % (i+1);
-		    T temp = x[i ][j];
-		    x[i ][j]    = x[ii][j];
-		    x[ii][j]    = temp;
-		}
-}
 
 optimoptions getoptions(){
 	optimoptions options;
@@ -63,34 +29,12 @@ optimoptions getoptions(){
 }
 #include <math.h>
 
-bool inbound( double *x, double *lb, double *ub, int d)
-{
-	for( int i=0; i<d; i++)
-		if( x[i] < lb[i] || x[i] > ub[i])
-			return false;
-	return true;
-}
-bool inbound( double *x, double lb, double ub, int d)
-{
-	for( int i=0; i<d; i++)
-		if( x[i] < lb || x[i] > ub)
-			return false;
-	return true;
-}
 bool uniform_norm_le( double *x1, double *x2, double max, int dim)
 {
 	for( int i=0; i<dim; i++)
 		if( fabs(x1[i]-x2[i]) > max)
 			return false;
 	return true;
-}
-double uniform_norm( double *x1, double *x2, int dim)
-{
-	double max = 0;
-	for( int i=0; i<dim; i++)
-		max = fmax( fabs(x1[i]-x2[i]), max);
-
-	return max;
 }
 
 bool uniform_norm_le( double *x, double max, int dim)
@@ -117,129 +61,7 @@ void multistart(
 		//fprintf(stderr, "\n");
 	}
 }
-#include <time.h>
-void gradientDecent( double *x0, double *lb, double *ub, int dim, double (*func) (int, const double*, double*, void*), void* func_data, optimoptions *options, double *sol)
-{
-	//srand(2);
-	bool stop = false;
-	double X[dim], *lastX=sol, grad[dim],
-	       Y,      lastY;
-	double alpha = 1;
 
-	unsigned int seed = clock();
-	if(x0)
-		for( int i=0; i<dim; i++)
-			lastX[i] = x0[i];
-	else
-		for( int i=0; i<dim; i++){
-			double beta = unifrnd(double, &seed);
-			lastX[i] = ub[i]*beta + lb[i]*(1-beta); //(ub[i]+lb[i])/2.;
-			//lastX[i] = ub[i]*7/23. + lb[i]*16/23.; //(ub[i]+lb[i])/2.;
-		}
-	if( options->Display)fprintf( stderr, "<< init %e >>\n", lastX[0]);
-	int evals = 0;
-
-	alpha = uniform_norm( lb, ub, dim);
-
-	for( int iter=0; iter<options->MaxIter && !stop; iter++)
-	{
-		//alpha = uniform_norm( lb, ub, dim);
-
-		// get gradient
-		if( options->GradObj){
-			lastY = (*func) ( dim, lastX, grad, func_data); evals++;
-		}else{
-			lastY = (*func) ( dim, lastX, 0,    func_data); evals++;
-			for( int i=0; i<dim; i++)
-			if(ub[i]-lb[i] != 0.){
-				lastX[i] += options->FinDiffRelStep;
-				grad[i] = ((*func) ( dim, lastX, 0, func_data) - lastY) / options->FinDiffRelStep; evals++;
-				lastX[i] -= options->FinDiffRelStep;
-
-				if( isinf(grad[i])){
-					lastX[i] -= options->FinDiffRelStep;
-					grad[i] = (lastY - (*func) ( dim, lastX, 0, func_data)) / options->FinDiffRelStep; evals++;
-					lastX[i] += options->FinDiffRelStep;
-				}
-				//fprintf(stderr, "%.3e ", grad[i]);
-			}else{
-				grad[i] = 0;
-			}
-
-			fprintf(stderr, " <- grad, alpha -> %e\n", alpha);
-		}
-		double abs_grad=0;
-		for( int i=0; i<dim; i++)
-			abs_grad += grad[i]*grad[i];
-		abs_grad = sqrt( abs_grad);
-
-		// decent gradient
-		if( !uniform_norm_le( grad, 0, dim)){
-
-			for( int i=0; i<dim; i++)
-				X[i] = lastX[i] - grad[i]*alpha/abs_grad;
-
-			// step size respecting boundary?
-			while( !inbound( X, lb, ub, dim)){
-				alpha /= 2;
-				for( int i=0; i<dim; i++){
-					X[i] = lastX[i] - grad[i]*alpha/abs_grad;
-				}
-				if( alpha < options->TolX){
-					//if( options->Display)
-						fprintf( stderr, "%i: dX %e < TolX %e\n", iter, alpha, options->TolX);
-					return;
-				}
-			}
-
-			// evaluation
-			Y = (*func) ( dim, X, 0, func_data); evals++;
-			//fprintf( stderr, "%i: %e (%e)\n", iter, Y, alpha);
-			while( Y >= lastY){
-
-				alpha /= 2;
-				for( int i=0; i<dim; i++)
-					X[i] = lastX[i] - grad[i]*alpha/abs_grad;
-				Y = (*func) ( dim, X, 0, func_data); evals++;
-				//if( options->Display)
-				{
-					fprintf( stderr, "%i: %e <- {", iter, Y);
-					for( int i=0; i<dim; i++)
-						fprintf( stderr, "%e ", X[i]);
-					fprintf( stderr, "} (alpha=%e)\n", alpha);
-				}
-				if( evals==options->MaxFunEvals || fabs(Y-lastY) < options->TolFun || alpha < options->TolX){
-					fprintf( stderr, "#eval = %i/%i, |dy| = %e (< %e), dx = %e(< %e)\n", evals, options->MaxFunEvals, fabs(Y-lastY), options->TolFun, alpha, options->TolX);
-					return;
-				}
-			}
-
-
-			// breaking criterion
-			if( uniform_norm_le( lastX, X, options->TolX, dim)){
-				fprintf( stderr, "change (%.3e) < TolX\n", X[0] - lastX[0]);
-				stop = true;
-			}
-
-			for( int i=0; i<dim; i++)
-				lastX[i] = X[i];
-			lastY = Y;
-
-		}else{
-			fprintf( stderr, "Zero gradient\n");
-			stop = true;
-		}
-
-
-
-		if( options->Display)
-			fprintf( stderr, "%i: %e <- %e\n", iter, Y, X[0]);
-
-		//alpha *= 10;
-	}
-	fprintf( stderr, "Max. Iterations finished (alpha = %e)\n", alpha);
-	//fprintf( stderr, "<< %e >>\n", lastX[0]); //exit(0);
-}
 
 typedef struct {
 	double *x, *y, *w;
@@ -706,6 +528,8 @@ double linearRegression( double *x, double *y, int n, double *theta, int ntheta)
 #include "gp.ipp"
 
 
+enum gpmode { MEAN, VAR, LOSS};
+
 typedef struct{
 	double* f;
 	double* s2;
@@ -714,7 +538,7 @@ typedef struct{
 	int d;
 	double (*covFunc) ( double* &, double* &, int &, double* &);
 	double* hyp;
-	bool uncertainty;
+	gpmode mode;
 } gplikdata;
 double gplik(int n, const double *hyp, double *grad, void *my_func_data)
 {
@@ -756,86 +580,17 @@ double gpeval(int d, const double *x, double *grad, void *my_func_data)
 			((gplikdata*)my_func_data)->covFunc,
 			((gplikdata*)my_func_data)->hyp);
 
-	if( ((gplikdata*)my_func_data)->uncertainty )
+	switch( ((gplikdata*)my_func_data)->mode ){
+	case VAR: // maximize variance
 		return -s2;
-	else
-		return -log( normalCFD( min, y, s2) );
-}
-
-void getHyperParameters( double **X, double *y, int n, int d, double *hyp){
-
-	// Scaling length = neighbor distance
-	double mindist_x[n];
-	double max_mindist_x=0;
-	double maxdist_y=0;
-	double mean_y = 0;
-	double min_y = y[0];
-
-	for( int i=0; i<n; i++)
-		mindist_x[i] = 1e20;
-
-	for( int i=0; i<n; i++)
-		for( int j=i+1; j<n; j++){
-			double dist = 0;
-			for( int k=0; k<d; k++)
-				dist += pow( X[i][k] - X[j][k], 2);
-			mindist_x[i] = fmin( mindist_x[i], dist);
-			mindist_x[j] = fmin( mindist_x[j], dist);
-
-			maxdist_y = fmax( maxdist_y, fabs(y[i]-y[j]) );
-		}
-
-	for( int i=0; i<n; i++){
-		max_mindist_x = fmax( mindist_x[i], max_mindist_x);
-		mean_y += y[i];
-		min_y = fmin( min_y, y[i]);
+	case LOSS: // maximize loss
+		return log( 1 - normalCFD( min, y, s2) );
+	case MEAN: // minimize mean
+		return y;
 	}
-	mean_y /= (double)n;
-
-	hyp[0] = -5;
-	hyp[1] = log10( sqrt( max_mindist_x))+0.5;
-	hyp[2] = log10( maxdist_y)+2;
-	hyp[3] = min_y;
-
-
-
-
 }
-void getHyperParameters( double *X, double *y, int n, double *hyp){
-
-	// Scaling length = neighbor distance
-	double mindist_x[n];
-	double max_mindist_x=0;
-	double maxdist_y=0;
-	double mean_y = 0;
-	double min_y = y[0];
-
-	for( int i=0; i<n; i++)
-		mindist_x[i] = 1e20;
-
-	for( int i=0; i<n; i++)
-		for( int j=i+1; j<n; j++){
-			double dist = pow( X[i] - X[j], 2);
-			mindist_x[i] = fmin( mindist_x[i], dist);
-			mindist_x[j] = fmin( mindist_x[j], dist);
-
-			maxdist_y = fmax( maxdist_y, fabs(y[i]-y[j]) );
-		}
-
-	mean_y = mean(y, n);
-	min_y  = min (y, n);
-	max_mindist_x = sqrt( max( mindist_x, n) );
 
 
-	hyp[0] = -5;
-	hyp[1] = log10( max_mindist_x)+1;
-	hyp[2] = log10( maxdist_y)+2;
-	hyp[3] = min_y;
-
-
-
-
-}
 
 /*inline double mean( double *&x, int &n){
 	double _mean=0;
@@ -853,15 +608,20 @@ void summaryStatistics( double (*func) (int, const double*, double*, void*),
 	){
 	mean = 0;
 	s2 = 0;
+	double y[n];
 	for( int j=0; j<n; j++){
 		double Y = (*func) ( dim, x, 0,    0);
+		y[j] = Y;
 		mean += Y;
 		s2 += Y*Y;
 	}
 
 	mean /= (double) n;
-	s2 = fmax( s2 / (double) n - mean*mean, 0);
-	s2 = sqrt( s2 / (double) n); // STANDARD ERROR OF MEAN
+	s2 = fmax( s2 / (double) n - mean*mean, 0); // VARIANCE
+	s2 = s2 / (double) n; // VARIANCE OF MEAN
+	//s2 = sqrt( s2 / (double) n); // STANDARD ERROR OF MEAN
+
+	//mean = median(y,n);
 }
 
 void getAlphaBounds( double *x0, double *v, double *lb, double *ub, int dim, double &alpha_lb, double &alpha_ub){
@@ -1144,7 +904,7 @@ exit(0);*/
 		}break;
 
 		case 5:{ 			// Hyper-cube sampling & Gaussprocess approximation
-			int _n=200;
+			int _n=500;
 			double **_x = allocMatrix<double>( _n, dim );
 			double _lb[_n];
 			double _ub[_n];
@@ -1153,13 +913,14 @@ exit(0);*/
 				_lb[i] = sol[i] - 1e-1;
 				_ub[i] = sol[i] + 1e-1;
 			}
-			LHS( _x, _lb, _ub, _n, dim);
-			for( int i=0; i<_n; i++)
+			LHS<double>( _x, _lb, _ub, _n, dim);
+			for( int i=0; i<_n; i++){
 				_y[i] = (*func)( dim, _x[i], 0,0);
+			}
 			double hyp[4];
 			getHyperParameters( _x, _y, _n, dim, hyp);
+			hyp[1] += 2;
 			hyp[0] = -1;
-			hyp[1] = -1;
 			//hyp[2] = 1;
 
 			double *pMgrad = Mgrad;
@@ -1171,6 +932,7 @@ exit(0);*/
 
 			double _yt[_n];
 			evalVarianceSparse<double>(
+			//evalVariance(
 					_x, _y,  0,  _n,
 					_x, _yt, 0,   _n,
 					dim,
@@ -1387,13 +1149,15 @@ void gpopt( double *x0, double *lb, double *ub, int dim, double (*func) (int, co
 	double  *popS2= (double*)malloc( options->MaxFunEvals*sizeof(double));
 	int      popSize = 0;
 	double   minX[dim];
+	double solf;
+	unsigned int seed = 0;
 
 	double hyp[4];
 	double hlb[4] = {2,  0,  -1, 1e5};
 	double hub[4] = {2,  3,  7,  1e5};
 
 	int evals = 0;
-	FILE *fp = fopen( "population.out", "w+");
+	FILE *fp;
 	FILE *fp_pred = fopen( "prediction.out", "w+");
 
 	// INITIAL SAMPLING
@@ -1403,19 +1167,10 @@ void gpopt( double *x0, double *lb, double *ub, int dim, double (*func) (int, co
 		sol[j] = popX[0][j];
 
 	// EVALUATE MEAN & STD
+	fp = fopen( "population.out", "w+");
 	for( int i=0; i<popSize; i++){
-		popY [i] = 0;
-		popS2[i] = 0;
-		for( int j=0; j<options->MaxFunEvalsAvg; j++){
-			double Y = (*func) ( dim, popX[i], 0,    0); evals++;
-			popY [i] += Y;
-			popS2[i] += Y*Y;
-		}
+		summaryStatistics( func, popX[i], dim, options->MaxFunEvalsAvg, popY[i], popS2[i]);
 
-		popY [i] /= (double) options->MaxFunEvalsAvg;
-		popS2[i] = fmax( popS2[i] / (double) options->MaxFunEvalsAvg - popY[i]*popY[i], 0);
-		popS2[i] /= (double) options->MaxFunEvalsAvg; // STANDARD ERROR OF MEAN
-		//fprintf( fp, "0 %e %e %e %e\n", popX [i][0],popX [i][1],popY [i],popS2 [i]);
 		fprintf( fp, "0 ");
 		for( int j=0; j<dim; j++)
 			fprintf( fp, "%e ", popX [i][j]);
@@ -1425,6 +1180,7 @@ void gpopt( double *x0, double *lb, double *ub, int dim, double (*func) (int, co
 			fprintf( stderr, "%e ", popX [i][j]);
 		fprintf( stderr, "mean=%e,  s2=%e\n", popY [i], popS2[i]);
 	}
+	fclose(fp);
 
 	for( int iter=0; iter<options->MaxIter; iter ++){
 
@@ -1484,6 +1240,7 @@ void gpopt( double *x0, double *lb, double *ub, int dim, double (*func) (int, co
 
 
 		// SAMPLE FROM GP
+		//if( false)
 		if( dim < 3){
 			int x[2];
 			int nx[2] = {100, 100};
@@ -1513,7 +1270,7 @@ void gpopt( double *x0, double *lb, double *ub, int dim, double (*func) (int, co
 					fprintf( fp_pred, "%i ", iter );
 					for( int i=0; i<dim; i++)
 						fprintf( fp_pred, "%e ", new_popX[new_popSize][i]);
-					fprintf( fp_pred, "%e %e \n", new_popY[new_popSize], new_popS2[new_popSize]);
+					fprintf( fp_pred, "%e %e %e\n", new_popY[new_popSize], new_popS2[new_popSize], normalCFD( solf, new_popY[new_popSize], new_popS2[new_popSize]));
 					new_popSize++;
 				}
 				if( dim>1)
@@ -1527,83 +1284,113 @@ void gpopt( double *x0, double *lb, double *ub, int dim, double (*func) (int, co
 		//fprintf(stderr, "PREDICT MINIMUM\n");
 		//double minX[2];
 		optimoptions gpoptions = getoptions();
-		gpoptions.MaxFunEvals = 100;
+		gpoptions.MaxFunEvals = 1000;
 		gpoptions.Display = false;
 
 		double gp_lb[dim];
 		double gp_ub[dim];
 		for( int i=0; i<dim; i++){	gp_lb[i] = lb[i]; gp_ub[i] = ub[i]; }
 
-		int mode = iter%3;
+		int mode = iter%(1+dim);
 		switch( mode){
 		case 0:
-			gpdata.uncertainty = false;
-			fprintf(stderr, "predicted minimum: ");
+			gpdata.mode = LOSS;
+			fprintf(stderr, "predicted loss: ");
+			for( int i=0; i<dim; i++){	minX[i] = gp_lb[i] + (gp_ub[i]-gp_lb[i])*unifrnd(double, &seed);}
 			break;
 		case 1:
-			gpdata.uncertainty = true;
+			gpdata.mode = VAR;
 			fprintf(stderr, "predicted maximum: ");
+			for( int i=0; i<dim; i++){	minX[i] = gp_lb[i] + (gp_ub[i]-gp_lb[i])*unifrnd(double, &seed);}
 			break;
 			//gpoptions.Display = true;
 		default:
-			gpdata.uncertainty = true;
+			gpdata.mode = VAR;
 			double beta = 1. /  (double)mode;
 			fprintf(stderr, "predicted max (%.2f): ", beta);
 			for( int i=0; i<dim; i++){	gp_lb[i] = beta*gp_lb[i] + (1-beta)*sol[i]; gp_ub[i] = beta*gp_ub[i] + (1-beta)*sol[i]; }
+			for( int i=0; i<dim; i++){	minX[i] = sol[i];}
 			break;
 		}
+
+		//for( int i=0; i<dim; i++)
+		//	minX[i] = gp_lb[i] + (gp_ub[i]-gp_lb[i])*unifrnd(double, &seed);
+
 		//double *pminX = (double*)minX;
 		//multistart( 0, lb, ub, dim, gpeval, (void*)&gpdata, &gpoptions, gradientDecent, &pminX, 1);
-		gradientDecent( 0, gp_lb, gp_ub, dim, gpeval, (void*)&gpdata, &gpoptions, minX);
+		gradientDecent( minX, gp_lb, gp_ub, dim, gpeval, (void*)&gpdata, &gpoptions, minX);
+		// cross check
+		/*double minY = gpeval( dim, minX, 0, (void*)&gpdata);
+		for( int j=0; j<1000; j++){
+			double tempX[dim];
+			for( int i=0; i<dim; i++)
+				tempX[i] = lb[i] + (ub[i]-lb[i])*unifrnd(double, &seed);
+			double tempY = gpeval( dim, tempX, 0, (void*)&gpdata);
+			if( tempY < minY){
+				fprintf( stderr, "ERROR!!! %e < %e\n", tempY, minY);
+				exit(0);
+			}
+
+		}*/
+
+		//LevenbergMarquardt(dim, minX, gp_lb, gp_ub, 1e-3, 1, 1e-30, 100, gpeval, (void*)&gpdata);
 
 		for( int i=0; i<dim; i++)
 			fprintf(stderr, "%5.3f ", minX[i]);
 		//fprintf(stderr, "\n");
 
-		// ADD NEW POINT
-		//fprintf(stderr, "EVALUATE MINIMUM\n");
-		for( int i=0; i<dim; i++)
-			popX[popSize][i] = minX[i];
-		/*double **newX = &popX[popSize],
-				*newY = &popY[popSize],
-				*newS2= &popS2[popSize];
-		int		 newSize=1;*/
-		popY[popSize] = 0;
-		popS2[popSize] = 0;
-		for( int j=0; j<options->MaxFunEvalsAvg; j++){
-			double Y = (*func) ( dim, popX[popSize], 0,    0); evals++;
-			popY[popSize] += Y;
-			popS2[popSize] += Y*Y;
-		}
-		popY[popSize] /= (double) options->MaxFunEvalsAvg;
-		popS2[popSize] = fmax( popS2[popSize] / (double) options->MaxFunEvalsAvg - popY[popSize]*popY[popSize], 0);
-		popS2[popSize] /= (double) options->MaxFunEvalsAvg; // STANDARD ERROR OF MEAN
-		/*if(popS2[popSize] == 0){
-			fprintf( stderr, "ERROR: S2 == 0!!\n");
+		switch(2){
+		case 1:
+			// ADD NEW POINT
+			//fprintf(stderr, "EVALUATE MINIMUM\n");
 			for( int i=0; i<dim; i++)
-				fprintf( stderr, "%e ", popX [popSize][i]);
-			fprintf( stderr, "%e %e\n", popY [popSize],popS2 [popSize]);
-			fprintf( stderr, "\n\n");
-			exit( 0);
-		}*/
+				popX[popSize][i] = minX[i];
 
-		fprintf( fp, "%i ", iter);
-		for( int i=0; i<dim; i++)
-			fprintf( fp, "%e ", popX [popSize][i]);
-		fprintf( fp, "%e %e\n", popY [popSize],popS2 [popSize]);
-		fprintf( fp, "\n\n");
-		fclose(fp);
-		fp = fopen( "population.out", "a+");
+			summaryStatistics( func, popX[popSize], dim, options->MaxFunEvalsAvg, popY[popSize], popS2[popSize]);
 
+			fp = fopen( "population.out", "a+");
+			fprintf( fp, "%i ", iter);
+			for( int i=0; i<dim; i++)
+				fprintf( fp, "%e ", popX [popSize][i]);
+			fprintf( fp, "%e %e\n", popY [popSize],popS2 [popSize]);
+			fprintf( fp, "\n\n");
+			fclose(fp);
 
-		//popY [popSize] = (*func) ( dim, popX[popSize], 0,    0);
-		fprintf(stderr, " -> f=%.3e, s2=%.3e\n", popY[popSize], popS2[popSize]);
+			//popY [popSize] = (*func) ( dim, popX[popSize], 0,    0);
+			fprintf(stderr, " -> f=%.3e, s2=%.3e\n", popY[popSize], popS2[popSize]);
 
-		popSize++;
+			popSize++;
+
+			break;
+
+		case 2:{
+			double beta = 0.1;
+			int n=10;
+			for( int i=0; i<dim; i++){
+				gp_lb[i] = beta*lb[i] + (1-beta)* sol[i] - (ub[i]-lb[i])*beta;
+				gp_ub[i] = beta*lb[i] + (1-beta)* sol[i] + (ub[i]-lb[i])*beta;
+			}
+			LHS( &popX[popSize], gp_lb, gp_ub, n, dim, &seed);
+
+			fp = fopen( "population.out", "a+");
+			for( int i=0; i<n; i++){
+				summaryStatistics( func, popX[popSize+i], dim, options->MaxFunEvalsAvg, popY[popSize+i], popS2[popSize+i]);
+
+				fprintf( fp, "%i ", iter);
+				for( int j=0; j<dim; j++)
+					fprintf( fp, "%e ", popX [popSize+i][j]);
+				fprintf( fp, "%e %e\n", popY [popSize+i],popS2 [popSize+i]);
+			}
+			fprintf( fp, "\n\n");
+			fclose(fp);
+			popSize+=n;
+			}break;
+
+		}
+
 
 		// Contract around best
 		int idx;
-		double solf;
 		findmin( popY, popSize, solf, idx);
 		for( int i=0; i<dim; i++)
 			sol[i] = popX[idx][i];
@@ -1614,9 +1401,18 @@ void gpopt( double *x0, double *lb, double *ub, int dim, double (*func) (int, co
 			ub[i] = ub[i]*beta + sol[i]*(1-beta);
 		}*/
 
+		fprintf(stderr, "predicted minimum: \n");
+		gpdata.mode = MEAN;
+		gradientDecent( sol, gp_lb, gp_ub, dim, gpeval, (void*)&gpdata, &gpoptions, minX);
+		for( int i=0; i<dim; i++)
+			fprintf(stderr, "%5.3f ", minX[i]);
+		fprintf(stderr, "\n");
 	}
 
-	fclose(fp);
+	// SOLUTION == PREDICTION
+	for( int i=0; i<dim; i++)
+		sol[i] = minX[i];
+
 	fclose(fp_pred);
 }
 

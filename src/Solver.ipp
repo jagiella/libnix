@@ -1,11 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifdef OMP
+//#ifdef OMP
   #include <omp.h>
-#else
-  #warning "no openmp support"
-#endif
+//#else
+//  #warning "no openmp support"
+//#endif
 
 
 #include "SparseMatrix.hpp"

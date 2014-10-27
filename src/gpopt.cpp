@@ -88,29 +88,39 @@ int main( int argc, char **argv){
 /*	unsigned int p_seed=0;
 	double sn2 = 1e-1;
 	int n=1000, d=1;
-	double x[n], y[n], *px = x, *py = y, *ps2=0;
+	double **x = allocMatrix<double>( n, d+1 );
+	double y[n], **px = x, *py = y, *ps2=0;
+	double _lb[d];
+	double _ub[d];
+	double _y[n];
+	for( int i=0; i<d; i++){
+		_lb[i] = -1;
+		_ub[i] = -1.+1e-3;
+	}
+	LHS( x, _lb, _ub, n, d);
+
 	FILE *_fp = fopen( "raw.dat", "w+");
 	for( int i=0; i<n; i++){
 		//x[i] = exp(-i/10.) * M_PI;
 		//x[i] = i/(double)(n-1) * M_PI;
-		x[i] = unifrnd(double, &p_seed) * M_PI;
-		y[i] = sin( -x[i]) * 1e5 + normrnd( &p_seed)*sn2;
-		fprintf( _fp, "%e %e %e\n", x[i], y[i], 1e-1);
+		//x[i] = unifrnd(double, &p_seed) * 0.1;
+		//y[i] = sin( -x[i][0]) * 1e-1 + normrnd( &p_seed)*sn2;
+		x[i][1] = 1;
+		y[i] = myfunc3( 2, x[i], 0, 0);
+		fprintf( _fp, "%e %e %e\n", x[i][0], y[i], 1e-1);
 	}
 	fclose( _fp);
 
-	int nt=1001;
-	double xt[nt], yt[nt], s2t[nt], *pxt = xt, *pyt = yt, *ps2t=s2t;
-	for( int i=0; i<nt; i++){
-			xt[i] = i/(double)(nt-1) * M_PI;
-	}
+	int nt=1000;
+	double **xt = allocMatrix<double>( nt, d );
+	double yt[nt], s2t[nt], **pxt = xt, *pyt = yt, *ps2t=s2t;
+	LHS( xt, _lb, _ub, nt, d);
 
 	double hyp[4], *phyp = hyp;
-	getHyperParameters( x, y, n, hyp);
+	getHyperParameters( x, y, n, d, hyp);
 	//hyp[0] = -1 + 5;
-	hyp[1] += 1;
-	hyp[1] += 0;
-	hyp[0] = log(sn2);
+	hyp[1] += 2;
+	hyp[0] = -1;//log(sn2);
 	//hyp[1] = -0;
 	printVector( hyp, 4, "%.2e ");
 	evalVarianceSparse<double>(
@@ -119,10 +129,11 @@ int main( int argc, char **argv){
 			pxt, pyt,  ps2t, nt,
 			d,
 			covMatern5, phyp);
-
+	_fp = fopen( "gptest.dat", "w+");
 	for( int i=0; i<nt; i++){
-		printf( "%e %e %e\n", xt[i], yt[i], s2t[i]);
-		}
+		fprintf( _fp, "%e %e %e\n", xt[i][0], yt[i], s2t[i]);
+	}
+	fclose( _fp);
 	exit(0);
 	//
 */
@@ -151,7 +162,7 @@ int main( int argc, char **argv){
 		//gpopt( 0, lb, ub, dim, parabol, &options, sol);
 		break;
 	case 2:{
-		dim = 3;
+		dim = 7;
 		double tlb[] = {-3,1,0,-3,-5,-5,-5};
 		double tub[] = {-1,3,3,0,0,0,0};
 		double tx0[] = {-2,1.5, log10(100), log10(0.75) };
@@ -204,11 +215,16 @@ int main( int argc, char **argv){
 			// DIAGONAL
 			if( i==j){
 				//fprintf( fp, "set logscale y; \n");
-				fprintf( fp, "set origin %f,%f; plot [][:]\"linreg%i.dat\"u 1:2, \"linreg%i.dat\"u 1:3w l ls -1; unset logscale\n", offset_i, offset_j, i, i);
+				fprintf( fp, "set origin %f,%f; set xlabel 'par %i'; set ylabel 'obj. fun.'; plot [][:]\"linreg%i.dat\"u 1:2, \"linreg%i.dat\"u 1:3w l ls -1; unset logscale\n",
+						offset_i, offset_j,
+						i+1,
+						i, i);
 				//fprintf( fp, "unset logscale\n");
 			}if( i<j)
-				fprintf( fp, "set origin %f,%f; plot \"population.out\"u %i:%iw lp, '+' using (%e):(%e) lc 3 pt 6 ps 5 t'', \"grad.dat\"u %i:%i:(-$%i):(-$%i) notitle with vectors arrowstyle 1\n",
-						offset_i, offset_j, i+2, j+2, sol_true[i], sol_true[j],
+				fprintf( fp, "set origin %f,%f; set xlabel 'par %i'; set ylabel 'par %i';plot \"population.out\"u %i:%iw lp, '+' using (%e):(%e) lc 3 pt 6 ps 5 t'', \"grad.dat\"u %i:%i:(-$%i):(-$%i) notitle with vectors arrowstyle 1\n",
+						offset_i, offset_j,
+						i+1, j+1,
+						i+2, j+2, sol_true[i], sol_true[j],
 						i*2+1, j*2+1, i*2+2, j*2+2);
 			if( i>j)
 				fprintf( fp, "set origin %f,%f; splot \"gpline.dat\"u %i:%i:%iw p\n", offset_i, offset_j, i+1, j+1, dim+2);
@@ -218,13 +234,20 @@ int main( int argc, char **argv){
 	fprintf( fp, "unset multiplot\n");
 	fclose(fp);
 
-	gplinesearch( x0, lb, ub, dim, func, &options, sol);
+	gpopt( x0, lb, ub, dim, func, &options, sol);
+	//gplinesearch( x0, lb, ub, dim, func, &options, sol);
 
+
+	// SOLUTION
 
 	for( int i=0; i<dim; i++)
 		fprintf( stderr, "%.3e ", sol[i]);
 	fprintf( stderr, " <- solution \n");
 
+	// REL. ERROR
+	for( int i=0; i<dim; i++)
+		fprintf( stderr, "%.3e ", fabs(sol[i] - sol_true[i]) / fabs(sol_true[i]));
+	fprintf( stderr, " <- rel. error \n");
 
 	return 0;
 }

@@ -314,7 +314,7 @@ double myfunc3(int n, const double *x, double *grad, void *my_func_data)
 	}
 	//printVector( parv2, n+1, " %10.3e");
 
-    return log10( compare( n+1, parv1, parv2, 5, 1));
+    return log10( compare( n+1, parv1, parv2, 5, 1) );
 }
 
 double externalfuncPipe(int n, const double *x, double *grad, void *my_func_data){
@@ -385,9 +385,64 @@ double rekursiveIntegration( double *startingPoint, int startingDimension, int e
 	}
 }
 
+void summary_statistics(
+		double (*func) (int, const double*, double*, void*), void *func_data, int d, const double *parameters, int n,
+		double &y, double &s2)
+{
+	y  = 0;
+	s2 = 0;
+	for( int i=0; i<n; i++){
+		double val = (*func) (d, parameters, 0, func_data);
+		y  += val;
+		s2 += val*val;
+	}
+	y  /= (double)n;
+	s2  = s2/(double)n - pow(y, 2); // s2
+	s2 /= (double)n; // SEM^2
+
+}
+
+#include <stdlib.h>
+int cmp( const void * a, const void * b){
+	if( *(double*)a < *(double*)b ) return -1;
+	if( *(double*)a ==*(double*)b ) return  0;
+	if( *(double*)a > *(double*)b ) return +1;
+}
+
+void getKDESample(
+	double **x, 	double *f, 		int n,		// in
+	double **x_kde, double *f_kde, 	int n_kde	// out
+){
+	double f_crit = quantile( f, n, (double)n_kde/(double)n);
+
+	n_kde = 0;
+	for( int i=0; i<n; i++){
+		if( f[i] <= f_crit){
+			f_kde[n_kde] = f[i];
+			x_kde[n_kde] = x[i];
+			n_kde++;
+		}
+	}
+}
+
+void transform( double **xin, double **xout, int n, int d, double *m, double **inv_sqrt_S){
+	for( int i=0; i<n; i++){
+		for( int di=0; di<d; di++){
+			xout[i][di] = 0;
+			for( int dj=0; dj<d; dj++)
+				xout[i][di] += inv_sqrt_S[di][dj]*(xin[i][dj]-m[dj]);
+		}
+	}
+}
+
+#include "gp.hpp"
+#include "cov.hpp"
+#include "optimization.hpp"
 int main( int argc, char **argv){
 	srand(time(NULL));
 	//srand( 0);
+
+	bool TRANSFORM = true;
 
 /*	double startingPoint[] = { 0, 0, 0};
 	double lowerBounds[] = { -10, -10, -10};
@@ -476,7 +531,7 @@ int main( int argc, char **argv){
 
 
 	int iCPU = 10;
-	n = ( argc>4 ? atoi( argv[4]) : 100 );
+	int n_accepted = ( argc>4 ? atoi( argv[4]) : 100 );
 
 	char suffix[1024];
 	char filename[1024];
@@ -485,16 +540,22 @@ int main( int argc, char **argv){
 
 	// init variables
 	fprintf( stderr, "INIT\n");
-	double epsilon = DBL_MAX;
-	double **x_new, **x_old, **x_tmp, **x_par;
-	double  *f_new,  *f_old,  *f_tmp,  *f_par;
-	double  *w_new,  *w_old,  *w_tmp,  *w_par;
-	int      n_new,   n_old,            n_par = nparallel;
-	double mean[d], **cov = allocMatrix<double>(d,d), **invcov = allocMatrix<double>(d,d), **covL = allocMatrix<double>(d,d), detcov;
+	//double epsilon = DBL_MAX;
+	//double **x_new, **x_old, **x_tmp, **x_par;
+	//double  *f_new,  *f_old,  *f_tmp,  *f_par;
+	//double  *w_new,  *w_old,  *w_tmp,  *w_par;
+	//int      n_new,   n_old,            n_par = nparallel;
+	double mean[d], **cov = allocMatrix<double>(d,d), **invcov = allocMatrix<double>(d,d), **invcovL = allocMatrix<double>(d,d), **covL = allocMatrix<double>(d,d), detcov;
 
-	x_old = allocMatrix<double>( n+n_par, d);	f_old = (double*) malloc((n+n_par)*sizeof(double));	w_old = (double*) malloc((n+n_par)*sizeof(double)); n_old = 0;
-	x_new = allocMatrix<double>( n+n_par, d);	f_new = (double*) malloc((n+n_par)*sizeof(double));	w_new = (double*) malloc((n+n_par)*sizeof(double)); n_new = 0;
-	x_par = allocMatrix<double>( n_par,  d);	f_par = (double*) malloc(n_par*sizeof(double));    	w_par = (double*) malloc(n_par*sizeof(double));
+	int n_max = 10000;
+	double **x, *f, *s2, *w;
+	x = allocMatrix<double>( n_max, d);
+	double **x_tf = allocMatrix<double>( n_max, d);
+	f = (double*) malloc(n_max*sizeof(double));
+	s2= (double*) malloc(n_max*sizeof(double));
+	w = (double*) malloc(n_max*sizeof(double));
+	n = 0;
+	int n_avg = 4;
 
 
 #ifdef USE_OMP
@@ -507,259 +568,230 @@ int main( int argc, char **argv){
 
 	// stats
 	clock_t t, t_sampling = 0, t_evaluation = 0;
-	sprintf( filename, "%s.population.dat", suffix);
-	FILE *fp_population = fopen( filename, "w+");
+
 
 	// run iteration
 	int count_evals_per_iteration[iterations];
 	int count_evals = 0;
 	unsigned int sampling_seed = 0;
 
+	// INITIAL SAMPLING
+	sprintf( filename, "%s.population.dat", suffix);
+	FILE *fp_population = fopen( filename, "w+");
+	LHS( x, lb, ub, n_accepted, d, &sampling_seed);
+	count_evals = n_accepted*n_avg;
+	for( int i=0; i<n_accepted; i++){
+		for( int j=0; j<d; j++){
+			//x[i][j] = lb[j] + (ub[j]-lb[j])*RAND01_R(&sampling_seed);
+			fprintf( fp_population, "%e ", x[i][j]);
+		}
+		w[i] = 1./n_accepted;
+		summary_statistics( func, func_data, d, x[i], n_avg, f[i], s2[i]);
+		fprintf( fp_population, "%e %e %i %i %e\n", f[i], s2[i], 0, count_evals, DBL_MAX);
+	}
+
+	n += n_accepted;
+	fprintf( fp_population, "\n\n");
+	fclose(fp_population);
+
+	sprintf( filename, "%s.prediction.dat", suffix);
+	fp_population = fopen( filename, "w+");
+	fclose(fp_population);
+
+	int      n_kde = n_accepted/2;
+	double **x_kde = (double**)malloc(sizeof(double*)*n_kde);
+	double  *f_kde = (double*)malloc(sizeof(double)*n_kde);
+	double  *w_kde = (double*)malloc(sizeof(double)*n_kde);
+
+
 	fprintf( stderr, " iteration  #fun eval acceptance    epsilon\n");
 
 	for( int it=0; it<iterations; it++){
 
-		n_new = 0;
+		count_evals_per_iteration[it] = 0;
 
-		// COPY OLD ONES < EPSILON
-		/*for( int i=0; i<n_old; i++)
-			if( f_old[i] < epsilon){
-				for( int j=0; j<d; j++)
-				x_new[n_new][j] = x_old[i][j];
-				f_new[n_new] = f_old[i];
-				w_new[n_new] = 1 / kdepdf( x_old[i], x_old, invcov, detcov, d, n_old);
-				n_new ++;
-			}*/
+		// Prepare next iteration
+		double **x_new = &x[n];
+		double **x_new_tf = &x_tf[n];
+		double  *f_new = &f[n];
+		double  *s2_new= &s2[n];
+		double  *w_new = &w[n];
+		int      n_new = 0;
+
+		// KDE stuff
+		double epsilon_kde = quantile( &f[n-n_accepted], n_accepted, n_kde/(double)n_accepted);
+		/*double **x_kde = &x[n-n_accepted];
+		double  *f_kde = &f[n-n_accepted];
+		double  *w_kde = &w[n-n_accepted];*/
+		int i_kde=0;
+		for( int i=0; i<n_accepted && i_kde<n_kde; i++)
+		if( f[n-n_accepted+i] <= epsilon_kde){
+			f_kde[i_kde] = f[n-n_accepted+i];
+			w_kde[i_kde] = w[n-n_accepted+i];
+			x_kde[i_kde] = x[n-n_accepted+i];
+			i_kde++;
+		}
+		normalizeVector( w_kde, n_kde);
+		//getKDESample(x,f,n, x_kde,f_kde,n_kde);
+		// covariance
+		_mean( x_kde, n_kde, d, mean);
+		_cov(  x_kde, n_kde, d, mean, cov);
+		// determinant
+		detcov = determinantLU( cov, d); //fprintf( stderr, "|cov| = %e\n", detcov);
+		// sqrt of coveriance
+		decompCholeskyOwn(cov, covL, d); // Cholesky-decomposition
+		// inverse of covariance
+		inverseLU( cov, invcov, d);
 
 
-		// sample new points
-		count_evals_per_iteration[it]=0;
+		// GP hyperparameters
+		int      n_gp = n;//min( n, 5*n_accepted);
+		double **x_gp = &x[n-n_gp];
+		double  *f_gp = &f[n-n_gp];
+		double  *s2_gp= &s2[n-n_gp];
 
-		while( n_new<n){
 
-			// >>> SEQUENTIAL PART <<<
+		double hyp[4], *phyp = hyp;
+		//getHyperParameters( x_gp, f_gp, n_gp, d, phyp);
+		int n_lim = n;//min( n_gp, 3*n_accepted);
+		if( TRANSFORM){
+			inverseLU( covL, invcovL, d);
+			transform( x_gp, x_tf, n_gp, d, mean, invcovL);
+			getHyperParameters( &x_tf[n_gp-n_lim], &f_gp[n_gp-n_lim], n_lim, d, phyp);
+		}else
+			getHyperParameters( &x_gp[n_gp-n_lim], &f_gp[n_gp-n_lim], n_lim, d, phyp);
+		printVector( hyp, 4, "%.2e ");
 
-			for( int ip=0; ip<nparallel; ip++){
+		// K
+		double **K = allocMatrix<double>( n_gp, n_gp);
+		if( TRANSFORM)
+			covMatrix<double>( K, x_tf, n_gp,d, covMatern5, phyp);
+		else
+			covMatrix<double>( K, x_gp, n_gp,d, covMatern5, phyp);
+		for(int i=0; i<n_gp; i++)
+			K[i][i] += s2_gp[i] + pow(10,phyp[0]);
 
-				t = clock();
-				//fprintf( stderr, "SAMPLING %i\n", omp_get_thread_num());
-				if( it == 0){
-					// UNIFORM SAMPLING
-					for( int j=0; j<d; j++)
-						x_par[ip][j] = lb[j] + (ub[j]-lb[j])*RAND01_R(&sampling_seed);
-				}else{
-					// KERNEL DENSITY ESTIMATE
-					// choice point
-					int idx = cumsum( w_old, n_old, RAND01_R(&sampling_seed));
+		// inverse of K
+		double **invK = allocMatrix<double>( n_gp, n_gp);
+		inverseLU( K, invK, n_gp);
 
-					// sample from MVnorm dist around chosen point
-					do{
-						mvnrnd( x_par[ip], x_old[idx], covL, d, &sampling_seed);
-					}while( !inbound( x_par[ip], lb, ub, d));
-				}
-				t_sampling += clock() - t;
+
+
+		// Threshold
+		double f_kde_gp[n_kde];
+		double s2_kde_gp[n_kde];
+		if( TRANSFORM)
+			evalVariance<double>( x_tf, f_gp, s2_gp, n_gp, x_tf, f_kde_gp, s2_kde_gp, n_kde, d, covMatern5, phyp, invK);
+		else
+			evalVariance<double>( x_gp, f_gp, s2_gp, n_gp, x_gp, f_kde_gp, s2_kde_gp, n_kde, d, covMatern5, phyp, invK);
+		double epsilon_gp = quantile( f_kde_gp, n_kde, 0.1);
+
+		//epsilon = quantile( f_kde, n_kde, 0.5);
+
+
+		while( n_new<n_accepted){
+
+			// KERNEL DENSITY ESTIMATE
+
+			// choice point
+			int idx;
+			do{
+				idx = cumsum( w_kde, n_kde, RAND01_R(&sampling_seed));
+			}while( f_kde[idx] > epsilon_kde);
+
+			// sample from MVnorm dist around chosen point
+			do{
+				mvnrnd( x_new[n_new], x_kde[idx], covL, d, &sampling_seed);
+			}while( !inbound( x_new[n_new], lb, ub, d));
+
+
+			// EVALUATION OF GP
+			//double x_new_tf[d], *px_new_tf=x_new_tf;
+
+			if( TRANSFORM){
+				transform( &x_new[n_new], &x_new_tf[n_new], 1, d, mean, invcovL);
+				//evalVariance<double>( x_tf, f_gp, s2_gp, n_gp, &x_new_tf[n_new], &f_new[n_new], &s2_new[n_new], 1, d, covMatern5, phyp, invK);
+				double dummy;
+				evalVariance<double>( x_tf, f_gp, s2_gp, n_gp, &x_new_tf[n_new], &f_new[n_new], &dummy, 1, d, covMatern5, phyp, invK);
+				evalVariance<double>( x_tf, s2_gp, 0,    n_gp, &x_new_tf[n_new], &s2_new[n_new], &dummy, 1, d, covMatern5, phyp, invK);
+			}else
+				evalVariance<double>( x_gp, f_gp, s2_gp, n_gp, &x_new[n_new], &f_new[n_new], &s2_new[n_new], 1, d, covMatern5, phyp, invK);
+
+
+			// SAMPLE FROM GP
+			double rndval = f_new[n_new] + normrnd( &sampling_seed) * sqrt( s2_new[n_new]);
+
+
+			// ADD POINT
+			//fprintf( stderr, "WEIGHTS   THREAD %i\n", omp_get_thread_num());
+			if( rndval < epsilon_gp){
+				// EVALUATION OF MODEL
+				summary_statistics( func, func_data, d, x_new[n_new], n_avg, f_new[n_new], s2_new[n_new]);
+				count_evals_per_iteration[it] += n_avg;
+				count_evals += n_avg;
+
+				// WEIGHT
+				w_new[n_new] = 1 / kdepdf( x_new[n_new], x_kde, invcov, detcov, d, n_kde);
+				//w_new[n_new] = 1;
+				n_new++;
 			}
+		}
+		normalizeVector( w_new, n_new);
 
-			// >>> PARALLEL PART <<<
-
-	#ifdef USE_OMP
-	#pragma omp parallel for
-	#endif
-			for( int ip=0; ip<nparallel; ip++){
-				// EVALUATION
-
-				t = clock();
-				//fprintf( stderr, "EVALUATION THREAD %i\n", omp_get_thread_num());
-				f_par[ip] = (*func)( d, x_par[ip], 0, func_data);
-
-				t_evaluation += clock() - t;
-
-
-				// WEIGHTS
-				//fprintf( stderr, "WEIGHTS   THREAD %i\n", omp_get_thread_num());
-				w_par[ip]=0;
-				if( f_par[ip] < epsilon){
-					if( it == 0){
-						w_par[ip] = 1;
-					}else{
-						w_par[ip] = 1 / kdepdf( x_par[ip], x_old, invcov, detcov, d, n_old);
-					}
+		if( d==2){
+			sprintf( filename, "%s.prediction.dat", suffix);
+			fp_population = fopen( filename, "a+");
+			double _x[2], *_px=_x, _f, _s2;
+			for( _x[0]=lb[0]; _x[0]<=ub[0]; _x[0]+=0.1){
+			for( _x[1]=lb[1]; _x[1]<=ub[1]; _x[1]+=0.1)
+			{
+				for( int j=0; j<d; j++){
+					fprintf( fp_population, "%e ", _x[j]);
 				}
 
-				//fprintf( stderr, " <- End   THREAD %i\n", omp_get_thread_num());
+				if( TRANSFORM){
+					double _xt[d], *_pxt=_xt;
+					transform( &_px, &_pxt, 1, d, mean, invcovL);
+					/*for( int j=0; j<d; j++){
+						fprintf( fp_population, "%e ", _xt[j]);
+					}*/
+					evalVariance<double>( x_tf, f_gp, s2_gp, n_gp, &_pxt, &_f, &_s2, 1, d, covMatern5, phyp, invK);
+				}else
+					evalVariance<double>( x_gp, f_gp, s2_gp, n_gp, &_px, &_f, &_s2, 1, d, covMatern5, phyp, invK);
 
+				fprintf( fp_population, "%e %e %i %e\n", _f, _s2, count_evals, epsilon_kde);
 			}
-			count_evals += nparallel;
-			count_evals_per_iteration[it] += nparallel;
-
-
-
-			// >>> SEQUENTIAL PART <<<
-			for( int ip=0; ip<nparallel; ip++){
-				//fprintf( stderr, "%i = %5e \n", ip, f_par[ip]);
-				//fprintf( stderr, "%s\n", (w_par[ip] ? "accepted":"refused"));
-				if( w_par[ip]){
-					// COPY TO NEXT GENERATION
-					w_new[n_new] = w_par[ip];
-					f_new[n_new] = f_par[ip];
-					for( int id=0; id<d; id++)
-						x_new[n_new][id] = x_par[ip][id];
-					n_new++;
-				}
-			}
-
-			//return 0;
-
-			if( count_evals >= evaluations){
-				//break;
-				fprintf( stderr, "END\n");
-				double f_min;
-				int    i_min;
-				minimum( f_old, n_old, f_min, i_min);
-				printVector( x_old[i_min], d, "%e ");
-
-				fprintf ( stderr,
-						"TIME STATS: sampling = %e seconds per point, evaluation = %e sec / point.\n",
-						( (float)t_sampling  /count_evals)/CLOCKS_PER_SEC,
-						( (float)t_evaluation/count_evals)/CLOCKS_PER_SEC);
-
-				// PRINT KDE
-				sprintf( filename, "%s.kde.dat", suffix);
-				FILE *fp_kde = fopen( filename, "w+");
-				double dx = 0.1;
-				double intergral_kde = 0;
-				if(d==1){
-					dx = 0.01;
-					for( double x=lb[0]; x<ub[0]; x+=dx){
-							double xtest[1] = {x};
-							fprintf( fp_kde, "%e %e\n", x, kdepdf( xtest, x_old, invcov, detcov, d, n_old));
-							intergral_kde += dx*kdepdf( xtest, x_old, invcov, detcov, d, n_old);
+			fprintf( fp_population, "\n");
 						}
-				}
-
-				if(d==2){
-					int n0 = (int) (ub[0]-lb[0])/dx + 1;
-					int n1 = (int) (ub[1]-lb[1])/dx + 1;
-					double kde[n0][n1];
-					double lik[n0][n1];
-#ifdef USE_OMP
-#pragma omp parallel for
-#endif
-					for( int i0=0; i0<n0; i0++){
-						for( int i1=0; i1<n1; i1++){
-							double x = lb[0] + dx*i0, y = lb[1] + dx*i1;
-							double xtest[2] = {x, y};
-							kde[i0][i1] = kdepdf( xtest, x_old, invcov, detcov, d, n_old);
-							lik[i0][i1] = (*func)( d, xtest, 0, func_data);
-						}
-					}
-					for( int i0=0; i0<n0; i0++){
-						for( int i1=0; i1<n1; i1++){
-							double x = lb[0] + dx*i0, y = lb[1] + dx*i1;
-							fprintf( fp_kde, "%e %e %e %e\n", x,y, kde[i0][i1], lik[i0][i1]);
-							intergral_kde += dx*dx*kde[i0][i1];
-						}
-						fprintf( fp_kde, "\n");
-					}
-				}
-				fclose( fp_kde);
-				fprintf ( stderr, "[ %e ]\n", intergral_kde);
-
-				{
-					double startingPoint[d];
-					double stepSize[d];
-					int startingDimension = 0;
-					for( int i=0; i<d; i++)
-						stepSize[i] = (ub[i]-lb[i]) / 10.;
-					kdedata _kdedata;
-					_kdedata.detcov = detcov;
-					_kdedata.invcov = invcov;
-					_kdedata.n_old  = n_old;
-					_kdedata.x_old  = x_old;
-					#pragma omp parallel for
-					for( startingDimension=0; startingDimension<d; startingDimension++){
-						sprintf( filename, "%s.kde%i.dat", suffix, startingDimension);
-						FILE *fp_kde_d = fopen( filename, "w+");
-						double dx = (ub[startingDimension]-lb[startingDimension]) / 10.;
-						for( startingPoint[startingDimension]=lb[startingDimension]; startingPoint[startingDimension]<=ub[startingDimension]; startingPoint[startingDimension]+=dx)
-							fprintf( fp_kde_d, "%e %e\n", startingPoint[startingDimension], rekursiveIntegration( startingPoint, 0, startingDimension,
-									lb, ub, stepSize, d,
-									myfunckde, &_kdedata));
-						fclose( fp_kde_d);
-					}
-				}
-
-				return 0;
-			}
-			//fprintf( stderr, "---------> %5i+%4i %5i / %i\n", count_evals-count_evals_per_iteration[it], count_evals_per_iteration[it], n_new, n );
+			fprintf( fp_population, "\n");
+			fclose(fp_population);
 		}
 
-		normalizeVector( w_new, n_new);
-		epsilon = quantile( f_new, n_new, 0.5);
 
-		for( int i=0; i<n_new; i++){
-			for( int j=0; j<d; j++)
+		freeMatrix( K,    n_gp);
+		freeMatrix( invK, n_gp);
+
+		n += n_new;
+
+		fprintf( stderr, "%10i %10i %9.3f%% %10.3e\n", it, count_evals, 100*(double)n_new/count_evals_per_iteration[it], epsilon_kde);
+
+
+
+		sprintf( filename, "%s.population.dat", suffix);
+		fp_population = fopen( filename, "a+");
+		for( int i=0; i<n_accepted; i++)
+		if( f_new[i] < epsilon_kde){
+			for( int j=0; j<d; j++){
 				fprintf( fp_population, "%e ", x_new[i][j]);
-			fprintf( fp_population, "%e %e %i %i %e\n", f_new[i], w_new[i], it, count_evals, epsilon);
+			}
+			fprintf( fp_population, "%e %e %i %i %e\n", f_new[i], s2_new[i], it+1, count_evals, epsilon_kde);
 		}
 		fprintf( fp_population, "\n\n");
+		fclose(fp_population);
 
-		//fprintf( stderr, "new epsilon = %e\n", epsilon);
-
-
-
-		fprintf( stderr, "%10i %10i %9.3f%% %10.3e\n", it, count_evals, 100*(double)n_new/count_evals_per_iteration[it], epsilon);
-
-		x_tmp = x_old; x_old = x_new; x_new = x_tmp;
-		f_tmp = f_old; f_old = f_new; f_new = f_tmp;
-		w_tmp = w_old; w_old = w_new; w_new = w_tmp;
-		n_old = n_new;                n_new = 0;
-
-
-		//fprintf( stderr, "[ ITERATION %i ]\n", it);
-		count_evals_per_iteration[it]=0;
-
-		//fprintf( stderr, "mean\n");
-		_mean( x_old, n_old, d, mean);
-		//printVector( mean,d,"%10e ");
-
-		//fprintf( stderr, "cov\n");
-		_cov(  x_old, n_old, d, mean, cov);
-		//printMatrix( cov, d, d, "%10e ");
-
-		detcov = determinantLU( cov, d); //fprintf( stderr, "|cov| = %e\n", detcov);
-
-		//fprintf( stderr, "L\n");
-		decompCholeskyOwn(cov, covL, d); // Cholesky-decomposition
-		//printMatrix( covL, d, d, "%10e ");
-
-		//fprintf( stderr, "L*L^T\n");
-		/*double **test = allocMatrix<double>( d,d);
-		for( int i=0; i<d; i++)
-			for( int j=0; j<d; j++){
-				test[i][j] = 0;
-				for( int k=0; k<d; k++)
-					test[i][j] += covL[i][k]*covL[j][k];
-			}*/
-		//printMatrix( test, d, d, "%10e ");
-
-
-		//inverseCholesky( cov, invcov, d);
-		inverseLU( cov, invcov, d);
 
 	}
 
-
-	fprintf( stderr, "END\n");
-	double f_min;
-	int    i_min;
-	minimum( f_old, n_old, f_min, i_min);
-	printVector( x_old[i_min], d, "%e ");
-
-	fprintf ( stderr,
-			"TIME STATS: sampling = %e seconds per point, evaluation = %e sec / point.\n",
-			( (float)t_sampling  /count_evals)/CLOCKS_PER_SEC,
-			( (float)t_evaluation/count_evals)/CLOCKS_PER_SEC);
 
 	return 0;
 }

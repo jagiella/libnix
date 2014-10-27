@@ -79,7 +79,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = nix-abc$(EXEEXT) nix-gp$(EXEEXT)
+bin_PROGRAMS = nix-abcgp$(EXEEXT) nix-abc$(EXEEXT) nix-gp$(EXEEXT) \
+	nix-tumor1d$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/config/depcomp
@@ -141,12 +142,21 @@ nix_abc_DEPENDENCIES = libnix.la
 nix_abc_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(nix_abc_LDFLAGS) $(LDFLAGS) -o $@
+am_nix_abcgp_OBJECTS = abcgp.$(OBJEXT)
+nix_abcgp_OBJECTS = $(am_nix_abcgp_OBJECTS)
+nix_abcgp_DEPENDENCIES = libnix.la
+nix_abcgp_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
+	$(CXXFLAGS) $(nix_abcgp_LDFLAGS) $(LDFLAGS) -o $@
 am_nix_gp_OBJECTS = gpopt.$(OBJEXT)
 nix_gp_OBJECTS = $(am_nix_gp_OBJECTS)
 nix_gp_DEPENDENCIES = libnix.la
 nix_gp_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(nix_gp_LDFLAGS) $(LDFLAGS) -o $@
+am_nix_tumor1d_OBJECTS = tumor1d.$(OBJEXT)
+nix_tumor1d_OBJECTS = $(am_nix_tumor1d_OBJECTS)
+nix_tumor1d_DEPENDENCIES = libnix.la
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -181,9 +191,10 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(libnix_la_SOURCES) $(nix_abc_SOURCES) $(nix_gp_SOURCES)
+SOURCES = $(libnix_la_SOURCES) $(nix_abc_SOURCES) $(nix_abcgp_SOURCES) \
+	$(nix_gp_SOURCES) $(nix_tumor1d_SOURCES)
 DIST_SOURCES = $(libnix_la_SOURCES) $(nix_abc_SOURCES) \
-	$(nix_gp_SOURCES)
+	$(nix_abcgp_SOURCES) $(nix_gp_SOURCES) $(nix_tumor1d_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -330,12 +341,17 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
 lib_LTLIBRARIES = libnix.la
+nix_abcgp_SOURCES = abcgp.cpp
+nix_abcgp_LDADD = -lgsl -lgslcblas  libnix.la
+nix_abcgp_LDFLAGS = -fopenmp
 nix_abc_SOURCES = abc.cpp
 nix_abc_LDADD = -lgsl -lgslcblas  libnix.la
 nix_abc_LDFLAGS = -fopenmp
 nix_gp_SOURCES = gpopt.cpp
 nix_gp_LDADD = -lgsl -lgslcblas libnix.la
 nix_gp_LDFLAGS = -fopenmp
+nix_tumor1d_SOURCES = tumor1d.cpp
+nix_tumor1d_LDADD = libnix.la
 libnix_la_SOURCES = gp.cpp model.cpp hash.cpp statistics.cpp optimization.cpp Mathematix.cpp
 libnix_la_LDFLAGS = -version-info 0:0:0
 all: all-am
@@ -464,9 +480,17 @@ nix-abc$(EXEEXT): $(nix_abc_OBJECTS) $(nix_abc_DEPENDENCIES) $(EXTRA_nix_abc_DEP
 	@rm -f nix-abc$(EXEEXT)
 	$(AM_V_CXXLD)$(nix_abc_LINK) $(nix_abc_OBJECTS) $(nix_abc_LDADD) $(LIBS)
 
+nix-abcgp$(EXEEXT): $(nix_abcgp_OBJECTS) $(nix_abcgp_DEPENDENCIES) $(EXTRA_nix_abcgp_DEPENDENCIES) 
+	@rm -f nix-abcgp$(EXEEXT)
+	$(AM_V_CXXLD)$(nix_abcgp_LINK) $(nix_abcgp_OBJECTS) $(nix_abcgp_LDADD) $(LIBS)
+
 nix-gp$(EXEEXT): $(nix_gp_OBJECTS) $(nix_gp_DEPENDENCIES) $(EXTRA_nix_gp_DEPENDENCIES) 
 	@rm -f nix-gp$(EXEEXT)
 	$(AM_V_CXXLD)$(nix_gp_LINK) $(nix_gp_OBJECTS) $(nix_gp_LDADD) $(LIBS)
+
+nix-tumor1d$(EXEEXT): $(nix_tumor1d_OBJECTS) $(nix_tumor1d_DEPENDENCIES) $(EXTRA_nix_tumor1d_DEPENDENCIES) 
+	@rm -f nix-tumor1d$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(nix_tumor1d_OBJECTS) $(nix_tumor1d_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -476,12 +500,14 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Mathematix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/abc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/abcgp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gpopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/model.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optimization.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/statistics.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tumor1d.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\

@@ -40,6 +40,7 @@ double mad(    double  *x, int n);
 void findmin( double *x, int n, double &o_min, int &o_idx);
 void findmax( double *x, int n, double &max, int &idx);
 double  min( double  *x, int n);
+int min( int x1, int x2);
 double  max( double  *x, int n);
 
 #endif /* STATISTICS_HPP_ */

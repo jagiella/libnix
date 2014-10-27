@@ -27,9 +27,9 @@
 #include "statistics.hpp"
 #include "model.hpp"
 
-enum CellPhenotypes{ FREE=0, DIVIDING=2, QUESCENT=3, DEAD=1};
-enum CellProcessTypes{ DIVISION=0, NECROSIS=1, REENTER=2};
-enum StatType{ Proliferation, ECM};
+enum CellPhenotypes{ FREE=0, DEAD=1, DIVIDING=2, QUESCENT=3};
+enum CellProcessTypes{ DIVISION=0, NECROSIS=1, REENTER=2, LYSIS=3};
+enum StatType{ Proliferation, ECM, TUNEL};
 
 #define myrand( p_rseed) (rand_r(p_rseed)/(RAND_MAX+1.))
 #define dmax(a,b) (a>b?a:b)
@@ -53,16 +53,18 @@ public:
 	int _index;
 	int _type;
 	int _pos;
-	Process *processes[3];
+	Process *processes[4];
 	Cell( int pos, int type, model_input minp, int idx=0) : _index(idx), _type(type), _pos(pos) {
 		processes[0] = new Process( this, DIVISION, minp.k_div);
 		processes[1] = new Process( this, NECROSIS, minp.k_nec);
 		processes[2] = new Process( this, REENTER,  minp.k_re);
+		processes[3] = new Process( this, LYSIS,    minp.k_lys);
 	};
 	~Cell(){
 		free( processes[0]);
 		free( processes[1]);
 		free( processes[2]);
+		free( processes[3]);
 	};
 	static void add( Cell* cell, Cell* cells[], int n_cells, Cell* lattice[], int n_lattice){
 
@@ -81,15 +83,23 @@ void doThatStat( Cell* lattice[], double molecule[], int size, double contributi
 	while( lattice[offset]==0) offset--;
 
 	progress += contribution;
-	double partial_contribution = ( progress < 1. ? contribution : contribution - (progress-1) );
+	float partial_contribution = ( progress < 1. ? contribution : contribution - (progress-1) );
 
 	for( int i=0; i<length; i++)
-		if( i<=offset && lattice[offset-i])
+		if( i<=offset && lattice[offset-i]){
 		switch(stat_type){
 		case Proliferation:
 			stat[i] += partial_contribution*(lattice[offset-i]->_type == DIVIDING); break;
+		case TUNEL:
+			stat[i] += partial_contribution*(lattice[offset-i]->_type == DEAD); break;
 		case ECM:
 			stat[i] += partial_contribution*molecule[offset-i]; break;
+		}
+
+		/*if( stat[i]>1){
+			fprintf( stderr, "ERROR: stat[%i] = %f (Contrib=%f, prog=%f, %s)\n", i, stat[i], partial_contribution, progress, filename); exit(0);
+		}*/
+
 		}
 
 	// output and reset
@@ -109,9 +119,11 @@ void doThatStat( Cell* lattice[], double molecule[], int size, double contributi
 			// reset
 			if( i<=offset && lattice[offset-i])
 			switch(stat_type){
-				case Proliferation:
+			case Proliferation:
 				stat[i] = (contribution-partial_contribution)*(lattice[offset-i]->_type == DIVIDING); break;
-				case ECM:
+			case TUNEL:
+				stat[i] = (contribution-partial_contribution)*(lattice[offset-i]->_type == DEAD); break;
+			case ECM:
 				stat[i] = (contribution-partial_contribution)*molecule[offset-i]; break;
 			}else
 				stat[i] = 0;
@@ -168,6 +180,14 @@ double updateRates(
 				M++;
 			}else{
 				processes[M] = cells[i]->processes[REENTER];
+				sum += processes[M]->_rate;
+				M++;
+			}
+
+			break;
+
+		case DEAD:{
+				processes[M] = cells[i]->processes[LYSIS];
 				sum += processes[M]->_rate;
 				M++;
 			}
@@ -250,7 +270,7 @@ void perform( Cell* lattice[], int N, std::vector<Cell*> &cells,
 				);
 		//printf( "closestFree(%i)=%i\n", origin, target);
 
-		if( exp(-dist*16.8/minp.delta_L) < myrand( p_rseed) || ecm[origin] < minp.ecm_min ){
+		if( exp(-dist*16.8*0.8/minp.delta_L) < myrand( p_rseed) || ecm[origin] < minp.ecm_min ){
 			lattice[ origin ]->_type = QUESCENT;
 		}
 		if( target!=-1){
@@ -259,7 +279,7 @@ void perform( Cell* lattice[], int N, std::vector<Cell*> &cells,
 
 			Cell* daughter;
 			//if( dist > delta_L || ecm[origin] < ecm_min )
-			if( exp(-dist*16.8/minp.delta_L) < myrand( p_rseed) || ecm[origin] < minp.ecm_min )
+			if( exp(-dist*16.8*0.8/minp.delta_L) < myrand( p_rseed) || ecm[origin] < minp.ecm_min )
 				daughter = new Cell( origin, QUESCENT, minp, cells.size());
 			else
 				daughter = new Cell( origin, DIVIDING, minp, cells.size());
@@ -275,7 +295,7 @@ void perform( Cell* lattice[], int N, std::vector<Cell*> &cells,
 	{
 		//fprintf( stderr, "NECROSIS: c %i\n", origin);
 		// detach from lattice
-		lattice[ origin ] = 0;
+/*		lattice[ origin ] = 0;
 
 		// erase from cell list
 		Cell* remove = process->_cell;
@@ -283,8 +303,22 @@ void perform( Cell* lattice[], int N, std::vector<Cell*> &cells,
 		cells[ remove->_index ]->_index = remove->_index;
 		cells.pop_back();
 		delete( remove );
+*/
+		process->_cell->_type = DEAD;
 
 		//fprintf( stderr, "NECROSIS: l %i -> c %i/%i\n", origin, idx, cells.size());
+	}break;
+
+	case LYSIS:
+	{
+		lattice[ origin ] = 0;
+
+				// erase from cell list
+				Cell* remove = process->_cell;
+				cells[ remove->_index ]         = cells[ cells.size()-1 ];
+				cells[ remove->_index ]->_index = remove->_index;
+				cells.pop_back();
+				delete( remove );
 	}break;
 
 	case REENTER:
@@ -294,7 +328,7 @@ void perform( Cell* lattice[], int N, std::vector<Cell*> &cells,
 				lattice, N, origin,
 				target, dist
 		);
-		if( exp(-dist*16.8/minp.delta_L) < myrand( p_rseed) || ecm[origin] < minp.ecm_min )
+		if( exp(-dist*16.8*0.8/minp.delta_L) < myrand( p_rseed) || ecm[origin] < minp.ecm_min )
 			lattice[ origin ]->_type = QUESCENT;
 		else
 			lattice[ origin ]->_type = DIVIDING;
@@ -334,8 +368,10 @@ double* model( int parc, double *parv)
 	int InitialRadius = 50;
 	float InitialQuiescent = 0;
 
+
 	// cell kinetics
 	model_input minp;
+	minp.k_lys   = 0.003;
 	minp.delta_L = 100;
 	minp.k_div   = 1./24.;
 
@@ -409,6 +445,8 @@ double* model( int parc, double *parv)
 	double stat_progress = 0;
 	double statECM[stat_size]; for( int i=0; i<stat_size; i++) statECM[i] = 0;
 	double statECM_progress = 0;
+	double statTUNEL[stat_size]; for( int i=0; i<stat_size; i++) statTUNEL[i] = 0;
+	double statTUNEL_progress = 0;
 
 	double *mout = (double*) malloc( 2400 * sizeof(double));
 	double *growth_curve = mout;
@@ -416,8 +454,8 @@ double* model( int parc, double *parv)
 	double *KI67_24  = &mout[600+300];
 	double *ECM_17   = &mout[600+300+300];
 	double *ECM_24   = &mout[600+300+300+300];
-	//double *TUNEL_17 = &mout[600+300+300+300+300];
-	//double *TUNEL_24 = &mout[600+300+300+300+300+300];
+	double *TUNEL_17 = &mout[600+300+300+300+300];
+	double *TUNEL_24 = &mout[600+300+300+300+300+300];
 	for( int i=0; i<2400; i++)
 		mout[i] = 0;
 
@@ -433,6 +471,7 @@ double* model( int parc, double *parv)
 
 	// molecules
 	double oxy[N], doxy[N], Doxy=6300000/pow(16.8,2), oxyB=0.28; for( int i=0; i<N; i++) oxy[i] = oxyB;
+	double _Doxy[N],_Dglc[N];
 	double glc[N], dglc[N], Dglc=378000 /pow(16.8,2), glcB=25;   for( int i=0; i<N; i++) glc[i] = glcB;
 	double ecm[N], decm[N], Decm=100 /pow(16.8,2),    ecmB=0.;  for( int i=0; i<N; i++) ecm[i] = 0.;
 	float last_update = 0;
@@ -496,13 +535,24 @@ double* model( int parc, double *parv)
 			   	   processes, processcount);
 
 
-	   if( 16< t/24 && t/24<17.9 ){
+	   if( 16< t/24 && t/24<=17 ){
 		   doThatStat( lattice, ecm, N, dt/24., statECM, stat_size, statECM_progress, "radial17ECM.dat", ECM, ECM_17);
 		   doThatStat( lattice, 0,   N, dt/24., stat,    stat_size, stat_progress,    "radial17.dat", Proliferation, KI67_17);
+	   	   doThatStat( lattice, 0,   N, dt/24., statTUNEL,stat_size,statTUNEL_progress,"radial24.dat", TUNEL, TUNEL_17);
 	   }
-	   if( 23< t/24 && t/24<24.9 ){
+
+	   /*if( t/24 < 17 && 17 < ((t+dt)/24) ){
+		   for(int i=0; i<stat_size; i++){
+			   statECM[i] /= statECM_progress;
+			   statECM[i] /= statECM_progress;
+			   statECM[i] /= statECM_progress;
+		   }
+	   }*/
+
+	   if( 23< t/24 && t/24<=24 ){
 		   doThatStat( lattice, ecm, N, dt/24., statECM, stat_size, statECM_progress, "radial24ECM.dat", ECM, ECM_24);
 	   	   doThatStat( lattice, 0,   N, dt/24., stat,    stat_size, stat_progress,    "radial24.dat", Proliferation, KI67_24);
+	   	   doThatStat( lattice, 0,   N, dt/24., statTUNEL,stat_size, statTUNEL_progress,"radial24.dat", TUNEL, TUNEL_24);
 	   }
 
 	   // update molecule conc.
@@ -531,32 +581,44 @@ double* model( int parc, double *parv)
 		   // STEADY STATE
 		   double max_residual = 1e-5;
 		   double residual = max_residual;
-		   if( minp.USE_ATP)
-		   while(residual >= max_residual){
-			   residual=0;
-			   // diffusion
-			   int i=0; int consuming = (lattice[i] && (lattice[i]->_type==DIVIDING || lattice[i]->_type==QUESCENT));
-			   doxy[i] = (oxy[i+1])*(consuming*10+1)*Doxy / (consuming*oxyCon( glc[i], oxy[i])/oxy[i] + (consuming*10+1)*Doxy) - oxy[i];
-			   dglc[i] = (glc[i+1])*(consuming*10+1)*Dglc / (consuming*glcCon( glc[i], oxy[i])/glc[i] + (consuming*10+1)*Dglc) - glc[i];
+		   if( minp.USE_ATP){
 
-			   for( i=1; i<N-1; i++){consuming = (lattice[i] && (lattice[i]->_type==DIVIDING || lattice[i]->_type==QUESCENT));
-				   doxy[i] = (oxy[i-1]+oxy[i+1])*(consuming*10+1)*Doxy / (consuming*oxyCon( glc[i], oxy[i])/oxy[i] + 2*(consuming*10+1)*Doxy) - oxy[i];
-				   dglc[i] = (glc[i-1]+glc[i+1])*(consuming*10+1)*Dglc / (consuming*glcCon( glc[i], oxy[i])/glc[i] + 2*(consuming*10+1)*Dglc) - glc[i];
+			   for( int i=0; i<N; i++){
+				   int consuming = (lattice[i] && (lattice[i]->_type==DIVIDING || lattice[i]->_type==QUESCENT));
+				   _Doxy[i] = (1 + (1-consuming)*30) * Doxy;
+				   _Dglc[i] = (1 + (1-consuming)*30) * Dglc;
 			   }
 
-			   i=N-1;consuming = (lattice[i] && (lattice[i]->_type==DIVIDING || lattice[i]->_type==QUESCENT));
-			   doxy[i] = (oxyB)*(consuming*10+1)*Doxy / (consuming*oxyCon( glc[i], oxy[i])/oxy[i] + (consuming*10+1)*Doxy) - oxy[i];
-			   dglc[i] = (glcB)*(consuming*10+1)*Dglc / (consuming*glcCon( glc[i], oxy[i])/glc[i] + (consuming*10+1)*Dglc) - glc[i];
+#define DC( D, i) ( fmin( D[(int)(i-0.5)], D[(int)(i+0.5)]) * (4.*M_PI*(i)*(i)) )
+#define RAD( i) (4.*M_PI*(i)*(i))
 
-			   for(i=0; i<N; i++){
-				   oxy[i] += doxy[i];
-				   glc[i] += dglc[i];
+			   while(residual >= max_residual){
+				   residual=0;
+				   // diffusion
+				   int i=0; int consuming = (lattice[i] && (lattice[i]->_type==DIVIDING || lattice[i]->_type==QUESCENT));
+				   doxy[i] = (oxy[i+1]*DC(_Doxy,i+.5)) / (RAD( i)*consuming*oxyCon( glc[i], oxy[i])/oxy[i] + DC(_Doxy,i+.5)) - oxy[i];
+				   dglc[i] = (glc[i+1]*DC(_Dglc,i+.5)) / (RAD( i)*consuming*glcCon( glc[i], oxy[i])/glc[i] + DC(_Dglc,i+.5)) - glc[i];
 
-				   residual = fmax( residual, fabs(doxy[i]));
-			   }
+				   for( i=1; i<N-1; i++){consuming = (lattice[i] && (lattice[i]->_type==DIVIDING || lattice[i]->_type==QUESCENT));
+					   doxy[i] = (oxy[i-1]*DC(_Doxy,i-.5)+oxy[i+1]*DC(_Doxy,i+.5)) / ( RAD( i)*consuming*oxyCon( glc[i], oxy[i])/oxy[i] + DC(_Doxy,i-.5)+DC(_Doxy,i+.5)) - oxy[i];
+					   dglc[i] = (glc[i-1]*DC(_Dglc,i-.5)+glc[i+1]*DC(_Dglc,i+.5)) / ( RAD( i)*consuming*glcCon( glc[i], oxy[i])/glc[i] + DC(_Dglc,i-.5)+DC(_Dglc,i+.5)) - glc[i];
+				   }
 
-			   //printf( "residual=%e\n ", residual);
+				   i=N-1;
+				   doxy[i] = 0;
+				   dglc[i] = 0;
+
+				   for(i=0; i<N; i++){
+					   oxy[i] += doxy[i];
+					   glc[i] += dglc[i];
+
+					   residual = fmax( residual, fabs(doxy[i]));
+				   }
+
+				   //printf( "residual=%e\n ", residual);
 		   }
+		   }
+		  // exit(0);
 		   //last_update = t;
 	   }
 

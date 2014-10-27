@@ -1,11 +1,11 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
-#ifdef OMP
+//#ifdef OMP
   #include <omp.h>
-#else
+/*#else
   #warning "no openmp support"
-#endif
+#endif*/
 
 #include "Mathematix.hpp"
 

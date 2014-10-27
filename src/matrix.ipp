@@ -40,6 +40,17 @@ void printMatrix( T** &A, int n, int m)
 		fprintf( stderr, "\n");
 	}
 }
+template <class T>
+void printMatrix( T** &A, int n, int m, const char *name, const char *fmt)
+{
+	fprintf( stderr, "%s\n", name);
+	for( int i=0; i<n; i++){
+		for( int j=0; j<m; j++){
+			fprintf( stderr, fmt, A[i][j]);
+		}
+		fprintf( stderr, "\n");
+	}
+}
 
 
 template <class T>
@@ -470,6 +481,15 @@ void printVector( T *x, int m, const char *fmt = "%5.2e "){
 }
 
 template <class T>
+void printVector( T *x, int m, const char *name, const char *fmt){
+
+	fprintf( stderr, "%s = \n", name);
+	for( int j=0; j<m; j++)
+		fprintf( stderr, fmt, x[j]);
+	fprintf( stderr, "\n");
+}
+
+template <class T>
 void solveLinearSystemB( T **A, T *b, T *x, int dim, T **B)
 {
 	int i, // index of equation
@@ -569,6 +589,60 @@ void solveLinearSystem( T **A, T *b, T *x, int dim)
 	solveLinearSystemB<T>( A, b, x, dim, B);
 	freeMatrix( B, dim);
 }
+
+template <class T>
+T norm( T *x, int dim, int order = 0)
+{
+	if( order == 0){
+		// MAX NORM
+		T max = 0;
+		for( int i=0; i<dim; i++)
+			max = fmax( fabs(x[i]), max);
+		return max;
+	}else{
+		// MAX NORM
+		T sum = 0;
+		for( int i=0; i<dim; i++)
+			sum += pow( x[i], order);
+		return pow( sum, 1./order);
+	}
+}
+
+template <class T>
+T norm_diff( T *x1, T *x2, int dim, int order = 0)
+{
+	if( order == 0){
+		// MAX NORM
+		T max = 0;
+		for( int i=0; i<dim; i++)
+			max = fmax( fabs(x1[i]-x2[i]), max);
+		return max;
+	}else{
+		// MAX NORM
+		T sum = 0;
+		for( int i=0; i<dim; i++)
+			sum += pow( x1[i]-x2[i], order);
+		return pow( sum, 1./order);
+	}
+}
+
+template <class T>
+bool inbound( T *x, T *lb, T *ub, int d)
+{
+	for( int i=0; i<d; i++)
+		if( x[i] < lb[i] || x[i] > ub[i])
+			return false;
+	return true;
+}
+template <class T>
+bool inbound( T *x, T lb, T ub, int d)
+{
+	for( int i=0; i<d; i++)
+		if( x[i] < lb || x[i] > ub)
+			return false;
+	return true;
+}
+
 
 #define MATRIX_IPP
 #endif

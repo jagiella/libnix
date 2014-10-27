@@ -150,6 +150,12 @@ double min( double *x, int n){
 		min = fmin( min, x[i]);
 	return min;
 }
+int min( int x1, int x2){
+	if( x1 < x2)
+		return x1;
+	else
+		return x2;
+}
 double max( double *x, int n){
 	double max = x[0];
 	for( int i=1; i<n; i++)

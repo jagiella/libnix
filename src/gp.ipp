@@ -6,31 +6,39 @@
 
 #include "matrix.ipp"
 #include "cov.ipp"
+#include "statistics.hpp"
 //#include "mex.h"
 
 template <class T>
 void evalVariance(
-	T** &x,    T* &f,    T* &s2,    int &n,
-	T** &xnew, T* fnew, T* s2new, int &nnew,
-	int &d,
-	T (*covFunc) ( T* &, T* &, int &, T* &), double* &theta)
+	T** x,    T* f,    T* s2,    int n,
+	T** xnew, T* fnew, T* s2new, int nnew,
+	int d,
+	T (*covFunc) ( T* &, T* &, int &, T* &), double* &theta,
+	double** invK = 0)
 {
+	bool invK_provided = (invK != 0);
+
 	// covariance
-	double **K = allocMatrix<double>( n, n);
-	covMatrix<double>( K, x, n,d, covFunc, theta);
+	double **K;
+	if( !invK_provided){
+		K = allocMatrix<double>( n, n);
+		covMatrix<double>( K, x, n,d, covFunc, theta);
 
-	// noise
-	if(s2==0)
-		for(int i=0; i<n; i++)
-			K[i][i] += pow(10,theta[0]);
-	else
-		for(int i=0; i<n; i++)
-			K[i][i] += s2[i] + pow(10,theta[0]);
+		// noise
+		if(s2==0)
+			for(int i=0; i<n; i++)
+				K[i][i] += pow(10,theta[0]);
+		else
+			for(int i=0; i<n; i++)
+				K[i][i] += s2[i] + pow(10,theta[0]);
 
-	// inverse of K
-	double** invK = allocMatrix<double>( n, n);
-	//inverseCholesky( K, invK, n);
-	inverseLU( K, invK, n);
+		// inverse of K
+		invK = allocMatrix<double>( n, n);
+		//inverseCholesky( K, invK, n);
+		inverseLU( K, invK, n);
+	}
+
 
 	double tmp[n], *ptmp = tmp;
 	double cov[n], *pcov = cov;
@@ -54,8 +62,10 @@ void evalVariance(
 
 	}
 
-	freeMatrix( K,    n);
-	freeMatrix( invK, n);
+	if( !invK_provided){
+		freeMatrix( K,    n);
+		freeMatrix( invK, n);
+	}
 }
 
 template <class T> // 				>>> M E X <<<
@@ -380,6 +390,77 @@ void evalGradientSparse(
 
 }
 
+
+void getHyperParameters( double **X, double *y, int n, int d, double *hyp){
+
+	// Scaling length = neighbor distance
+	double mindist_x[n];
+	double max_mindist_x=0;
+	double maxdist_y=0;
+	double mean_y = 0;
+	double min_y = y[0];
+
+	for( int i=0; i<n; i++)
+		mindist_x[i] = 1e20;
+
+	for( int i=0; i<n; i++)
+		for( int j=i+1; j<n; j++){
+			double dist = 0;
+			for( int k=0; k<d; k++)
+				dist += pow( X[i][k] - X[j][k], 2);
+			mindist_x[i] = fmin( mindist_x[i], dist);
+			mindist_x[j] = fmin( mindist_x[j], dist);
+
+			maxdist_y = fmax( maxdist_y, fabs(y[i]-y[j]) );
+		}
+
+	mean_y = mean(y, n);
+	min_y  = min (y, n);
+	max_mindist_x = sqrt( max( mindist_x, n) );
+
+
+	hyp[0] = -5;
+	hyp[1] = log10( max_mindist_x);
+	hyp[2] = log10( maxdist_y*maxdist_y);
+	//hyp[2] = log10( maxdist_y*maxdist_y)+2;
+	hyp[3] = mean_y;
+
+}
+void getHyperParameters( double *X, double *y, int n, double *hyp){
+
+	// Scaling length = neighbor distance
+	double mindist_x[n];
+	double max_mindist_x=0;
+	double maxdist_y=0;
+	double mean_y = 0;
+	double min_y = y[0];
+
+	for( int i=0; i<n; i++)
+		mindist_x[i] = 1e20;
+
+	for( int i=0; i<n; i++)
+		for( int j=i+1; j<n; j++){
+			double dist = pow( X[i] - X[j], 2);
+			mindist_x[i] = fmin( mindist_x[i], dist);
+			mindist_x[j] = fmin( mindist_x[j], dist);
+
+			maxdist_y = fmax( maxdist_y, fabs(y[i]-y[j]) );
+		}
+
+	mean_y = mean(y, n);
+	min_y  = min (y, n);
+	max_mindist_x = sqrt( max( mindist_x, n) );
+
+
+	hyp[0] = -5;
+	hyp[1] = log10( max_mindist_x)+1;
+	hyp[2] = log10( maxdist_y)+2;
+	hyp[3] = min_y;
+
+
+
+
+}
 
 #define GP_IPP
 #endif

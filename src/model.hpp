@@ -12,6 +12,7 @@
 
 
 typedef struct {
+	float k_lys;
 	float k_div;
 	float k_nec;
 	float k_re;
