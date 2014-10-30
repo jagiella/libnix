@@ -180,48 +180,6 @@ bool inbound( double *x, double *lb, double *ub, int d)
 	return true;
 }
 
-template <class T>
-void decompCholesky( T** &A, T** &L, int n) {
-
-	gsl_matrix *gsl_L = gsl_matrix_alloc( n, n);
-	for( int i=0; i<n; i++)
-		for( int j=0; j<n; j++){
-			gsl_L->data[i * gsl_L->tda + j] = A[i][j];
-		}
-
-	gsl_linalg_cholesky_decomp ( gsl_L);
-	//gsl_linalg_cholesky_invert ( gsl_L);
-
-	for( int i=0; i<n; i++){
-		for( int j=0; j<=i; j++){
-			L[i][j] = gsl_L->data[i * gsl_L->tda + j];
-		}
-		for( int j=i+1; j<n; j++)
-			L[i][j] = 0;
-	}
-
-	gsl_matrix_free( gsl_L);
-}
-
-template <class T>
-void decompCholeskyOwn( T** &A, T** &L, int n) {
-
-	for( int i=0; i<n; i++)
-		for( int j=0; j<=i; j++){
-			double Summe = A[i][j];
-			for( int k=0; k<=j-1; k++)
-				Summe = Summe - L[i][k] * L[j][k];
-			if( i > j){
-				L[i][j] = Summe / L[j][j];   // Untere Dreiecksmatrix
-				L[j][i] = 0.;                // Obere Dreiecksmatrix
-				//L[j][i] = Summe / A[j][j]; // Obere Dreiecksmatrix
-			}
-			else if( Summe > 0)          // Diagonalelement
-				L[i][i] = sqrt( Summe);       // ... ist immer groesser Null
-			else
-	            fprintf( stderr, "Matrix not positive definite\n");   // ERROR
-		}
-}
 
 double myfunc(int n, const double *x, double *grad, void *my_func_data)
 {
@@ -444,20 +402,6 @@ int main( int argc, char **argv){
 
 	bool TRANSFORM = true;
 
-/*	double startingPoint[] = { 0, 0, 0};
-	double lowerBounds[] = { -10, -10, -10};
-	double upperBounds[] = {  10,  10,  10};
-	double stepSize[] = { 0.3, 0.3, 0.3};
-	int startingDimension = 0;
-	for( startingPoint[startingDimension]=-1; startingPoint[startingDimension]<=1; startingPoint[startingDimension]+=0.1)
-		fprintf(stderr, "%e\n", rekursiveIntegration( startingPoint, 0, startingDimension,
-				lowerBounds, upperBounds, stepSize, 2,
-				myfuncnorm2, 0));
-	fprintf(stderr, "%e\n", rekursiveIntegration( startingPoint, 0, -1,
-			lowerBounds, upperBounds, stepSize, 3,
-			myfuncnorm2, 0));
-	exit(0);
-*/
 	// ABC parameters
 	int d = 2;
 	int n = 100;
@@ -471,71 +415,89 @@ int main( int argc, char **argv){
 	int binom_data[2] = { 24, 16};
 	//	int binom_data[2] = { 6, 4};
 
+	double *lb=0;
+	double *ub=0;
 
-	// USER-PROVIDED PARAMETERS
-	if(argc>=2){ // function to minimize
-		if( strcmp( argv[1], "tumor") == 0){
-			func = myfunc3;
-		}else if( strcmp( argv[1], "norm") == 0){
-			func = myfuncnorm;
-			func_data = &func_seed;
-			d=2;
-		}else if( strcmp( argv[1], "norm2") == 0){
-			func = myfuncnorm2;
-			func_data = 0;
-			d=2;
-		}else if( strcmp( argv[1], "binom") == 0){
-			func = myfuncbinom;
-			func_data = &binom_data;
-			d=1;
-		}else{
-			fprintf( stderr, "Use user-provided command [ %s ]\n", argv[1]);
-			func_data = argv[1];
-#if __linux
-			func = externalfuncPipe;
-#else
-			func = externalfuncFile;
-#endif
-		}
+	int iCPU = 10;
+	int n_accepted = 100;
+
+	char suffix[1024];
+	char filename[1024];
+	sprintf( suffix, "%s", "output" );
+
+	enum {Log, Lin};
+	char SCALING = Lin;
+
+	char c;
+	while ((c = getopt (argc, argv, "m:l:u:n:o:L")) != -1)
+	switch (c){
+	      case 'm': { // function to minimize
+	  		if( strcmp( optarg, "tumor") == 0){
+	  			func = myfunc3;
+	  		}else if( strcmp( optarg, "norm") == 0){
+	  			func = myfuncnorm;
+	  			func_data = &func_seed;
+	  			d=2;
+	  		}else if( strcmp( optarg, "norm2") == 0){
+	  			func = myfuncnorm2;
+	  			func_data = 0;
+	  			d=2;
+	  		}else if( strcmp( optarg, "binom") == 0){
+	  			func = myfuncbinom;
+	  			func_data = &binom_data;
+	  			d=1;
+	  		}else{
+	  			fprintf( stderr, "Use user-provided command [ %s ]\n", optarg);
+	  			func_data = optarg;
+	  #if __linux
+	  			func = externalfuncPipe;
+	  #else
+	  			func = externalfuncFile;
+	  #endif
+	  		}
+	      }break;
+
+	      case 'l':{ // lower bound
+	    	  	d=0;
+				char *str = strtok( optarg,",");
+				while (str != NULL){
+					lb = (double*) realloc( lb, sizeof(double)*(d+1));
+					lb[d++] = atof( str);
+					str = strtok (NULL, ",");
+				}
+				fprintf( stderr, "Detected dimensionality to be d=%i\n", d);
+	      }break;
+
+	      case 'u':{ // upper bound
+				d=0;
+				char *str = strtok( optarg,",");
+				while (str != NULL){
+					ub = (double*) realloc( ub, sizeof(double)*(d+1));
+					ub[d++] = atof( str);
+					str = strtok (NULL, ",");
+				}
+	      }break;
+
+	      case 'n': n_accepted = atoi( optarg); break;
+
+	      case 'o': sprintf( suffix, "%s", optarg ); break;
+
+	      case 'L': SCALING = Log;
 	}
 
-	double *lb=0;
-	if(argc>2){ // lower bound
-		d=0;
-		char *str = strtok( argv[2],",");
-		while (str != NULL){
-		    lb = (double*) realloc( lb, sizeof(double)*(d+1));
-		    lb[d++] = atof( str);
-		    str = strtok (NULL, ",");
-		}
-		fprintf( stderr, "Detected dimensionality to be d=%i\n", d);
-	}else{
+
+	if( lb==0){
 		lb = (double*) malloc( sizeof(double)*d);
 		for(int i=0; i<d; i++) lb[i] = -FLT_MAX;
 		fprintf( stderr, "Assume dimensionality to be d=%i\n", d);
 	}
 
-	double *ub=0;
-	if(argc>3){ // upper bound
-		d=0;
-		char *str = strtok( argv[3],",");
-		while (str != NULL){
-		    ub = (double*) realloc( ub, sizeof(double)*(d+1));
-		    ub[d++] = atof( str);
-		    str = strtok (NULL, ",");
-		}
-	}else{
+
+	if( ub == 0){
 		ub = (double*) malloc( sizeof(double)*d);
 		for(int i=0; i<d; i++) ub[i] = FLT_MAX;
 	}
 
-
-	int iCPU = 10;
-	int n_accepted = ( argc>4 ? atoi( argv[4]) : 100 );
-
-	char suffix[1024];
-	char filename[1024];
-	sprintf( suffix, "%s", ( argc>5 ? argv[5] : "output" ));
 
 
 	// init variables
@@ -556,6 +518,10 @@ int main( int argc, char **argv){
 	w = (double*) malloc(n_max*sizeof(double));
 	n = 0;
 	int n_avg = 4;
+
+	double *x_lin = 0;
+	if(SCALING == Log)
+		x_lin = (double*) malloc(d*sizeof(double));;
 
 
 #ifdef USE_OMP
@@ -579,16 +545,30 @@ int main( int argc, char **argv){
 	sprintf( filename, "%s.population.dat", suffix);
 	FILE *fp_population = fopen( filename, "w+");
 	LHS( x, lb, ub, n_accepted, d, &sampling_seed);
-	count_evals = n_accepted*n_avg;
+	count_evals = 0;
+	count_evals_per_iteration[0] = 0;
 	for( int i=0; i<n_accepted; i++){
 		for( int j=0; j<d; j++){
 			//x[i][j] = lb[j] + (ub[j]-lb[j])*RAND01_R(&sampling_seed);
 			fprintf( fp_population, "%e ", x[i][j]);
 		}
 		w[i] = 1./n_accepted;
-		summary_statistics( func, func_data, d, x[i], n_avg, f[i], s2[i]);
+
+		switch( SCALING){
+		case Lin:
+			summary_statistics( func, func_data, d, x[i], n_avg, f[i], s2[i]); break;
+		case Log:
+			for( int j=0; j<d; j++) x_lin[j] = pow( 10, x[i][j]);
+			summary_statistics( func, func_data, d, x_lin, n_avg, f[i], s2[i]); break;
+		}
+		count_evals += n_avg;
+		count_evals_per_iteration[0] += n_avg;
+
 		fprintf( fp_population, "%e %e %i %i %e\n", f[i], s2[i], 0, count_evals, DBL_MAX);
+
+		fprintf( stderr, "\r%10i %10i %9.3f%% %10.3e\r", 0, count_evals, 100*(double)count_evals_per_iteration[0]/(n_avg*n_accepted), DBL_MAX);
 	}
+	fprintf( stderr, "%10i %10i %9.3f%% %10.3e\n", 0, count_evals, 100*(double)count_evals_per_iteration[0]/(n_avg*n_accepted), DBL_MAX);
 
 	n += n_accepted;
 	fprintf( fp_population, "\n\n");
@@ -606,7 +586,7 @@ int main( int argc, char **argv){
 
 	fprintf( stderr, " iteration  #fun eval acceptance    epsilon\n");
 
-	for( int it=0; it<iterations; it++){
+	for( int it=1; it<iterations; it++){
 
 		count_evals_per_iteration[it] = 0;
 
@@ -710,10 +690,10 @@ int main( int argc, char **argv){
 
 			if( TRANSFORM){
 				transform( &x_new[n_new], &x_new_tf[n_new], 1, d, mean, invcovL);
-				//evalVariance<double>( x_tf, f_gp, s2_gp, n_gp, &x_new_tf[n_new], &f_new[n_new], &s2_new[n_new], 1, d, covMatern5, phyp, invK);
-				double dummy;
-				evalVariance<double>( x_tf, f_gp, s2_gp, n_gp, &x_new_tf[n_new], &f_new[n_new], &dummy, 1, d, covMatern5, phyp, invK);
-				evalVariance<double>( x_tf, s2_gp, 0,    n_gp, &x_new_tf[n_new], &s2_new[n_new], &dummy, 1, d, covMatern5, phyp, invK);
+				evalVariance<double>( x_tf, f_gp, s2_gp, n_gp, &x_new_tf[n_new], &f_new[n_new], &s2_new[n_new], 1, d, covMatern5, phyp, invK);
+	//			double dummy;
+	//			evalVariance<double>( x_tf, f_gp, s2_gp, n_gp, &x_new_tf[n_new], &f_new[n_new], &dummy, 1, d, covMatern5, phyp, invK);
+	//			evalVariance<double>( x_tf, s2_gp, 0,    n_gp, &x_new_tf[n_new], &s2_new[n_new], &dummy, 1, d, covMatern5, phyp, invK);
 			}else
 				evalVariance<double>( x_gp, f_gp, s2_gp, n_gp, &x_new[n_new], &f_new[n_new], &s2_new[n_new], 1, d, covMatern5, phyp, invK);
 
@@ -726,7 +706,14 @@ int main( int argc, char **argv){
 			//fprintf( stderr, "WEIGHTS   THREAD %i\n", omp_get_thread_num());
 			if( rndval < epsilon_gp){
 				// EVALUATION OF MODEL
-				summary_statistics( func, func_data, d, x_new[n_new], n_avg, f_new[n_new], s2_new[n_new]);
+				switch( SCALING){
+				case Lin:
+					summary_statistics( func, func_data, d, x_new[n_new], n_avg, f_new[n_new], s2_new[n_new]); break;
+				case Log:
+					for( int i=0; i<d; i++) x_lin[i] = pow( 10, x_new[n_new][i]);
+					summary_statistics( func, func_data, d, x_lin, n_avg, f_new[n_new], s2_new[n_new]); break;
+				}
+
 				count_evals_per_iteration[it] += n_avg;
 				count_evals += n_avg;
 
@@ -735,6 +722,8 @@ int main( int argc, char **argv){
 				//w_new[n_new] = 1;
 				n_new++;
 			}
+			fprintf( stderr, "\r%10i %10i %9.3f%% %10.3e\r", it, count_evals, 100*(double)count_evals_per_iteration[it]/(n_avg*n_accepted), epsilon_kde);
+
 		}
 		normalizeVector( w_new, n_new);
 
@@ -773,7 +762,7 @@ int main( int argc, char **argv){
 
 		n += n_new;
 
-		fprintf( stderr, "%10i %10i %9.3f%% %10.3e\n", it, count_evals, 100*(double)n_new/count_evals_per_iteration[it], epsilon_kde);
+		fprintf( stderr, "%10i %10i %9.3f%% %10.3e\n", it, count_evals, 100*(double)n_new/(n_avg*count_evals_per_iteration[it]), epsilon_kde);
 
 
 

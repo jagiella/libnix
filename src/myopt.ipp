@@ -11,22 +11,6 @@
 
 
 
-optimoptions getoptions(){
-	optimoptions options;
-
-	options.Display = false;
-	options.FinDiffRelStep = 1e-6;
-	options.TolFun = 1e-6;
-	options.TolX   = 1e-6;
-	options.MaxIter     = 400;
-	options.MaxFunEvals = 1000;
-	options.GradObj     = false;
-
-	// gp-opt:
-	options.MaxFunEvalsAvg = 10;
-
-	return options;
-}
 #include <math.h>
 
 bool uniform_norm_le( double *x1, double *x2, double max, int dim)
@@ -877,7 +861,7 @@ exit(0);*/
 			double _y[_n];
 			for( int i=0; i<_n; i++){
 				for( int d=0; d<dim; d++){
-					_x[i][d] = sol[d] + dx*(unifrnd( double, &seed)*2-1 );
+					_x[i][d] = sol[d] + dx*(unifrnd<double>( &seed)*2-1 );
 				}
 				_y[i] = (*func)( dim, _x[i], 0,0);
 			}
@@ -1296,12 +1280,12 @@ void gpopt( double *x0, double *lb, double *ub, int dim, double (*func) (int, co
 		case 0:
 			gpdata.mode = LOSS;
 			fprintf(stderr, "predicted loss: ");
-			for( int i=0; i<dim; i++){	minX[i] = gp_lb[i] + (gp_ub[i]-gp_lb[i])*unifrnd(double, &seed);}
+			for( int i=0; i<dim; i++){	minX[i] = gp_lb[i] + (gp_ub[i]-gp_lb[i])*unifrnd<double>( &seed);}
 			break;
 		case 1:
 			gpdata.mode = VAR;
 			fprintf(stderr, "predicted maximum: ");
-			for( int i=0; i<dim; i++){	minX[i] = gp_lb[i] + (gp_ub[i]-gp_lb[i])*unifrnd(double, &seed);}
+			for( int i=0; i<dim; i++){	minX[i] = gp_lb[i] + (gp_ub[i]-gp_lb[i])*unifrnd<double>( &seed);}
 			break;
 			//gpoptions.Display = true;
 		default:

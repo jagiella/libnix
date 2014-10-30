@@ -2,9 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <time.h>
 #include <float.h>
-#include <unistd.h>
 #include <sys/stat.h>
 
 //#if __linux
@@ -27,18 +25,6 @@
 #define RAND01_R(seed) ((double)rand_r(seed)/(double)(RAND_MAX))
 #define DET2( A) (A[0][0]*A[1][1] - A[0][1]*A[1][0])
 
-double bla( double *a, double **B, double *c, int n){
-
-	double rtn=0, tmpi;
-	for( int i=0; i<n; i++){
-		tmpi = 0;
-		for( int j=0; j<n; j++)
-			tmpi += a[j]*B[j][i];
-		rtn += tmpi*c[i];
-	}
-
-	return rtn;
-}
 
 void minimum( double *x, int n, double &min_x, int &min_i)
 {
@@ -63,27 +49,6 @@ double quantile( double *x, int n, double f)
 	return gsl_stats_quantile_from_sorted_data ( tmp, 1, n, f);
 }
 
-void _mean( double **A, int n, int m, double *mean){
-	// mean
-	for( int j=0; j<m; j++)
-		mean[j] = A[0][j];
-	for( int i=1; i<n; i++)
-	for( int j=0; j<m; j++)
-		mean[j]+= A[i][j];
-	for( int j=0; j<m; j++)
-		mean[j]/= (double)n;
-}
-
-void _cov( double **A, int n, int m, double *mean, double **cov){
-	// covariance
-	for( int j=0;  j<m;  j++)
-		for( int jj=0; jj<m; jj++){
-			cov[j][jj] = 0;
-			for( int i=0;  i<n;  i++)
-				cov[j][jj] += (A[i][j] - mean[j])*(A[i][jj] - mean[jj]);
-			cov[j][jj] /= (double)(n-1);
-		}
-}
 
 /*double **allocMatrix<double>( int n, int m){
 	double **x_old = (double**)malloc( n*sizeof(double**));
@@ -97,14 +62,6 @@ void printVector( double *x, int m, const char *fmt = "%5.2e "){
 		fprintf( stderr, fmt, x[j]);
 	fprintf( stderr, "\n");
 }*/
-void normalizeVector( double *x, int m){
-
-	double sum = 0;
-	for( int j=0; j<m; j++)
-		sum += x[j];
-	for( int j=0; j<m; j++)
-		x[j] /= sum;
-}
 /*void printMatrix( double **A, int n, int m, const char *fmt){
 
 	for( int i=0; i<n; i++)
@@ -135,42 +92,7 @@ void matrixMultiplication( double **A, double **B, int n, int m, int l, double *
 		}
 }
 
-double mvnpdf( const double *x, double *mean, double **inv_s2, double det_s2, int n)
-{
-	double x0[n];
-	for( int i=0; i<n; i++)
-		x0[i] = x[i] - mean[i];
-	return 1. / sqrt( pow(2*M_PI, n) * det_s2) * exp(-0.5*bla( x0, inv_s2, x0,n));
-}
 
-double kdepdf( const double *x, double **samples, double **inv_s2, double det_s2, int n, int nsamples)
-{
-	double pdf = 0;
-	for( int i=0; i<nsamples; i++)
-		pdf += mvnpdf( x, samples[i], inv_s2, det_s2, n);
-	return pdf / (double)nsamples;
-}
-
-void mvnrnd( double *x, double *mean, double **s2, int n, unsigned int *p_seed)
-{
-	// sample from MVnorm dist around chosen point
-	double z[n];
-	normrnd( z, n, p_seed);
-
-	//fprintf( stderr, "Sample: ");
-	for( int i=0; i<n; i++){
-		x[i] = mean[i];
-		double tmp = 0;
-		for( int j=0; j<n; j++){
-			x[i] += s2[i][j] * z[j];
-			tmp += s2[i][j] * z[j];
-		}
-		//fprintf( stderr, "%e (%e) ", tmp, x[i]);
-	}
-	//fprintf( stderr, "\n");
-
-
-}
 
 bool inbound( double *x, double *lb, double *ub, int d)
 {
@@ -180,180 +102,8 @@ bool inbound( double *x, double *lb, double *ub, int d)
 	return true;
 }
 
-template <class T>
-void decompCholesky( T** &A, T** &L, int n) {
-
-	gsl_matrix *gsl_L = gsl_matrix_alloc( n, n);
-	for( int i=0; i<n; i++)
-		for( int j=0; j<n; j++){
-			gsl_L->data[i * gsl_L->tda + j] = A[i][j];
-		}
-
-	gsl_linalg_cholesky_decomp ( gsl_L);
-	//gsl_linalg_cholesky_invert ( gsl_L);
-
-	for( int i=0; i<n; i++){
-		for( int j=0; j<=i; j++){
-			L[i][j] = gsl_L->data[i * gsl_L->tda + j];
-		}
-		for( int j=i+1; j<n; j++)
-			L[i][j] = 0;
-	}
-
-	gsl_matrix_free( gsl_L);
-}
-
-template <class T>
-void decompCholeskyOwn( T** &A, T** &L, int n) {
-
-	for( int i=0; i<n; i++)
-		for( int j=0; j<=i; j++){
-			double Summe = A[i][j];
-			for( int k=0; k<=j-1; k++)
-				Summe = Summe - L[i][k] * L[j][k];
-			if( i > j){
-				L[i][j] = Summe / L[j][j];   // Untere Dreiecksmatrix
-				L[j][i] = 0.;                // Obere Dreiecksmatrix
-				//L[j][i] = Summe / A[j][j]; // Obere Dreiecksmatrix
-			}
-			else if( Summe > 0)          // Diagonalelement
-				L[i][i] = sqrt( Summe);       // ... ist immer groesser Null
-			else
-	            fprintf( stderr, "Matrix not positive definite\n");   // ERROR
-		}
-}
-
-double myfunc(int n, const double *x, double *grad, void *my_func_data)
-{
-	if (grad) {
-        grad[0] = 0.0;
-        grad[1] = 0.5 / sqrt(x[1]);
-    }
-    return sqrt(x[1]);
-}
-
-double myfunc2(int n, const double *x, double *grad, void *my_func_data)
-{
-	if (grad) {
-        grad[0] = 0.0;
-        grad[1] = 0.5 / sqrt(x[1]);
-    }
-
-	double dist = 0;
-	for( int i=0; i<n; i++)
-		dist += x[i]*x[i] + cos(x[i])*10;
-
-    return dist + RAND01*0;
-}
-
-double myfuncnorm(int n, const double *x, double *grad, void *my_func_data)
-{
-
-	double dist = 0;
-	for( int i=0; i<n; i++)
-		dist += pow( x[i] - 2, 2);
-
-	double rnd = 0;
-	normrnd( &rnd, 1, (unsigned int *)my_func_data);
-
-	double s2 = 10;
-//	return sqrt(dist) + rnd*2*sqrt(s2);
-	return dist + rnd*4*s2;
-}
-
-double myfuncnorm2(int n, const double *x, double *grad, void *my_func_data)
-{
-
-	double result = 1;
-
-	double m=0, s=1;
-
-	for( int i=0; i<n; i++)
-		result *= exp( -0.5 * pow( (x[i] - m) / s, 2) ) / sqrt(2*M_PI) / s;
-
-	return result; //+ RAND01*0.01;
-}
-
-double myfuncbinom(int n, const double *x, double *grad, void *my_func_data)
-{
-    int nsamples = ((int*)my_func_data)[0]+((int*)my_func_data)[1];
-    int sample[2] = { 0, 0};
-
-    // flip coins
-    for( int i=0; i<nsamples; i++){
-    	if( x[0] > RAND01){
-    		sample[0]++;
-    	}else
-    		sample[1]++;
-    }
-
-    return pow( ((int*)my_func_data)[0]-sample[0], 2) + pow( ((int*)my_func_data)[1]-sample[1], 2);
-}
-
-typedef struct {
-	double **x_old;
-	double **invcov;
-	double   detcov;
-	int      n_old;
-} kdedata;
-double myfunckde(int n, const double *x, double *grad, void *my_func_data)
-{
-    return kdepdf( x, ((kdedata*)my_func_data)->x_old, ((kdedata*)my_func_data)->invcov, ((kdedata*)my_func_data)->detcov, n, ((kdedata*)my_func_data)->n_old);
-}
 
 
-#include "model.hpp"
-double myfunc3(int n, const double *x, double *grad, void *my_func_data)
-{
-	double parv1[] = {0, 1/24., 100,   50, 0.25,   0.0033, 0.0005, 0.003};
-	double parv2[n+1];
-
-	parv2[0] = 0; // random seed
-	for( int i=0; i<n; i++){
-		parv2[i+1] = pow( 10., x[i]);
-	}
-	//printVector( parv2, n+1, " %10.3e");
-
-    return log10( compare( n+1, parv1, parv2, 5, 1));
-}
-
-double externalfuncPipe(int n, const double *x, double *grad, void *my_func_data){
-	char command[1024];
-	sprintf( command, "%s", (const char *)my_func_data); // executable
-	for( int i=0; i<n; i++)
-		sprintf( command, "%s %20e", command, x[i]);
-	//fprintf( stderr, "COMMAND: %s\n", command);
-
-	FILE *lsofFile_p = popen( command, "r");
-	char buffer[1024];
-	double rtn = atof( fgets(buffer, sizeof(buffer), lsofFile_p));
-	pclose(lsofFile_p);
-
-	return rtn;
-	//return RAND01;
-}
-
-double externalfuncFile(int n, const double *x, double *grad, void *my_func_data){
-	char command[1024];
-	char rnd_filename[1024];
-
-	sprintf( rnd_filename, "tmp_%i_%i.out", rand(), omp_get_thread_num());
-
-	sprintf( command, "%s", (const char *)my_func_data); // executable
-	for( int i=0; i<n; i++)
-		sprintf( command, "%s %20e", command, x[i]);
-	sprintf( command, "%s > %s", command, rnd_filename);
-
-	system( command);
-
-	FILE *lsofFile_p = fopen( rnd_filename, "r");
-	char buffer[1024];
-	double rtn = atof( fgets(buffer, sizeof(buffer), lsofFile_p));
-	fclose(lsofFile_p); remove(rnd_filename);
-
-	return rtn;
-	//return RAND01;
-}
 
 //void read2array( char *str, const char delimiter, ){
 
@@ -385,24 +135,20 @@ double rekursiveIntegration( double *startingPoint, int startingDimension, int e
 	}
 }
 
+void lin2log( double *xlin, double *xlog, int n){
+	for( int i=0; i<n; i++)
+		xlog[i] = log10(xlin[i]);
+}
+
+void log2lin( double *xlog, double *xlin, int n){
+	for( int i=0; i<n; i++)
+		xlin[i] = pow( 10, xlog[i]);
+}
+
+#include <unistd.h> // getopt
+
 int main( int argc, char **argv){
 	srand(time(NULL));
-	//srand( 0);
-
-/*	double startingPoint[] = { 0, 0, 0};
-	double lowerBounds[] = { -10, -10, -10};
-	double upperBounds[] = {  10,  10,  10};
-	double stepSize[] = { 0.3, 0.3, 0.3};
-	int startingDimension = 0;
-	for( startingPoint[startingDimension]=-1; startingPoint[startingDimension]<=1; startingPoint[startingDimension]+=0.1)
-		fprintf(stderr, "%e\n", rekursiveIntegration( startingPoint, 0, startingDimension,
-				lowerBounds, upperBounds, stepSize, 2,
-				myfuncnorm2, 0));
-	fprintf(stderr, "%e\n", rekursiveIntegration( startingPoint, 0, -1,
-			lowerBounds, upperBounds, stepSize, 3,
-			myfuncnorm2, 0));
-	exit(0);
-*/
 	// ABC parameters
 	int d = 2;
 	int n = 100;
@@ -416,77 +162,97 @@ int main( int argc, char **argv){
 	int binom_data[2] = { 24, 16};
 	//	int binom_data[2] = { 6, 4};
 
+	double *lb=0;
+	double *ub=0;
 
-	// USER-PROVIDED PARAMETERS
-	if(argc>=2){ // function to minimize
-		if( strcmp( argv[1], "tumor") == 0){
-			func = myfunc3;
-		}else if( strcmp( argv[1], "norm") == 0){
-			func = myfuncnorm;
-			func_data = &func_seed;
-			d=2;
-		}else if( strcmp( argv[1], "norm2") == 0){
-			func = myfuncnorm2;
-			func_data = 0;
-			d=2;
-		}else if( strcmp( argv[1], "binom") == 0){
-			func = myfuncbinom;
-			func_data = &binom_data;
-			d=1;
-		}else{
-			fprintf( stderr, "Use user-provided command [ %s ]\n", argv[1]);
-			func_data = argv[1];
-#if __linux
-			func = externalfuncPipe;
-#else
-			func = externalfuncFile;
-#endif
-		}
+	int iCPU = 10;
+	n = 100;
+
+	char suffix[1024];
+	char filename[1024];
+	sprintf( suffix, "%s", "output" );
+
+	enum {Log, Lin};
+	char SCALING = Lin;
+
+	char c;
+	while ((c = getopt (argc, argv, "m:l:u:n:o:L")) != -1)
+	switch (c){
+	      case 'm': { // function to minimize
+	  		if( strcmp( optarg, "tumor") == 0){
+	  			func = myfunc3;
+	  		}else if( strcmp( optarg, "norm") == 0){
+	  			func = myfuncnorm;
+	  			func_data = &func_seed;
+	  			d=2;
+	  		}else if( strcmp( optarg, "norm2") == 0){
+	  			func = myfuncnorm2;
+	  			func_data = 0;
+	  			d=2;
+	  		}else if( strcmp( optarg, "binom") == 0){
+	  			func = myfuncbinom;
+	  			func_data = &binom_data;
+	  			d=1;
+	  		}else{
+	  			fprintf( stderr, "Use user-provided command [ %s ]\n", optarg);
+	  			func_data = optarg;
+	  #if __linux
+	  			func = externalfuncPipe;
+	  #else
+	  			func = externalfuncFile;
+	  #endif
+	  		}
+	      }break;
+
+	      case 'l':{ // lower bound
+	    	  	d=0;
+				char *str = strtok( optarg,",");
+				while (str != NULL){
+					lb = (double*) realloc( lb, sizeof(double)*(d+1));
+					lb[d++] = atof( str);
+					str = strtok (NULL, ",");
+				}
+				fprintf( stderr, "Detected dimensionality to be d=%i\n", d);
+	      }break;
+
+	      case 'u':{ // upper bound
+				d=0;
+				char *str = strtok( optarg,",");
+				while (str != NULL){
+					ub = (double*) realloc( ub, sizeof(double)*(d+1));
+					ub[d++] = atof( str);
+					str = strtok (NULL, ",");
+				}
+	      }break;
+
+	      case 'n': n = atoi( optarg); break;
+
+	      case 'o': sprintf( suffix, "%s", optarg ); break;
+
+	      case 'L': SCALING = Log;
 	}
 
-	double *lb=0;
-	if(argc>2){ // lower bound
-		d=0;
-		char *str = strtok( argv[2],",");
-		while (str != NULL){
-		    lb = (double*) realloc( lb, sizeof(double)*(d+1));
-		    lb[d++] = atof( str);
-		    str = strtok (NULL, ",");
-		}
-		fprintf( stderr, "Detected dimensionality to be d=%i\n", d);
-	}else{
+
+	if( lb==0){
 		lb = (double*) malloc( sizeof(double)*d);
 		for(int i=0; i<d; i++) lb[i] = -FLT_MAX;
 		fprintf( stderr, "Assume dimensionality to be d=%i\n", d);
 	}
 
-	double *ub=0;
-	if(argc>3){ // upper bound
-		d=0;
-		char *str = strtok( argv[3],",");
-		while (str != NULL){
-		    ub = (double*) realloc( ub, sizeof(double)*(d+1));
-		    ub[d++] = atof( str);
-		    str = strtok (NULL, ",");
-		}
-	}else{
+
+	if( ub == 0){
 		ub = (double*) malloc( sizeof(double)*d);
 		for(int i=0; i<d; i++) ub[i] = FLT_MAX;
 	}
 
 
-	int iCPU = 10;
-	n = ( argc>4 ? atoi( argv[4]) : 100 );
 
-	char suffix[1024];
-	char filename[1024];
-	sprintf( suffix, "%s", ( argc>5 ? argv[5] : "output" ));
 
 
 	// init variables
 	fprintf( stderr, "INIT\n");
 	double epsilon = DBL_MAX;
-	double **x_new, **x_old, **x_tmp, **x_par;
+	double **x_new, **x_old, **x_tmp, **x_par, *x_lin;
 	double  *f_new,  *f_old,  *f_tmp,  *f_par;
 	double  *w_new,  *w_old,  *w_tmp,  *w_par;
 	int      n_new,   n_old,            n_par = nparallel;
@@ -496,6 +262,8 @@ int main( int argc, char **argv){
 	x_new = allocMatrix<double>( n+n_par, d);	f_new = (double*) malloc((n+n_par)*sizeof(double));	w_new = (double*) malloc((n+n_par)*sizeof(double)); n_new = 0;
 	x_par = allocMatrix<double>( n_par,  d);	f_par = (double*) malloc(n_par*sizeof(double));    	w_par = (double*) malloc(n_par*sizeof(double));
 
+	if(SCALING == Log)
+		x_lin = (double*) malloc(d*sizeof(double));;
 
 #ifdef USE_OMP
 	//int iCPU = nparallel;//= omp_get_num_procs();
@@ -555,6 +323,10 @@ int main( int argc, char **argv){
 					// sample from MVnorm dist around chosen point
 					do{
 						mvnrnd( x_par[ip], x_old[idx], covL, d, &sampling_seed);
+						//printVector( lb, d, "%5.3f ");
+						//printVector( x_par[ip], d, "%5.3f ");
+						//printVector( ub, d, "%5.3f ");
+						//printf( "%i\n", inbound( x_par[ip], lb, ub, d));
 					}while( !inbound( x_par[ip], lb, ub, d));
 				}
 				t_sampling += clock() - t;
@@ -570,7 +342,13 @@ int main( int argc, char **argv){
 
 				t = clock();
 				//fprintf( stderr, "EVALUATION THREAD %i\n", omp_get_thread_num());
-				f_par[ip] = (*func)( d, x_par[ip], 0, func_data);
+				switch( SCALING){
+				case Lin:
+					f_par[ip] = (*func)( d, x_par[ip], 0, func_data); break;
+				case Log:
+					log2lin( x_par[ip], x_lin, d);
+					f_par[ip] = (*func)( d, x_lin, 0, func_data); break;
+				}
 
 				t_evaluation += clock() - t;
 
@@ -692,6 +470,9 @@ int main( int argc, char **argv){
 				return 0;
 			}
 			//fprintf( stderr, "---------> %5i+%4i %5i / %i\n", count_evals-count_evals_per_iteration[it], count_evals_per_iteration[it], n_new, n );
+//			fprintf( stderr, "%10i %10i %9.3f%% %10.3e\n", it, count_evals, 100*(double)n_new/count_evals_per_iteration[it], epsilon);
+			fprintf( stderr, "\r%10i %10i [%3i/%4i] %10.3e\r", it, count_evals, n_new, n, epsilon);
+
 		}
 
 		normalizeVector( w_new, n_new);

@@ -79,7 +79,7 @@ double logLikelihood( double *v1, double *v2, double *s21, double *s22, int n)
 
 
 
-double *mean( double **x, int n1, int n2, VectorOrientation orientation){
+double *mean( double **x, int n1, int n2, char orientation){
 	double *m;
 
 	switch( orientation){
@@ -129,14 +129,23 @@ void stdmean( double *x, double *dx, double d, int n, double &SEM_x, double &mea
 	SEM_x  = sqrt(s2_x / (double) n);
 }
 
-void mean( double **x, int d, int n, double *&mean_x){
+void mean( double **x, int d, int n, double *mean_x, char orientation){
 
-    for( int id=0; id<d; id++){
-    	mean_x[id] = 0;
-    	for( int i=0; i<n; i++)
-    		mean_x[id] += x[id][i];
-    	mean_x[id] = mean_x[id] / (double) n;
-    }
+	if( orientation == 1)
+		for( int id=0; id<d; id++){
+			mean_x[id] = 0;
+			for( int i=0; i<n; i++)
+				mean_x[id] += x[id][i];
+			mean_x[id] = mean_x[id] / (double) n;
+		}
+	else
+    	for( int i=0; i<n; i++){
+	    	mean_x[i] = 0;
+	    	for( int id=0; id<d; id++)
+	    		mean_x[i] += x[id][i];
+	    	mean_x[i] = mean_x[i] / (double) d;
+	    }
+
 }
 double mean( double *x, int n){
 	double mean_x = 0;
@@ -144,11 +153,34 @@ double mean( double *x, int n){
 		mean_x += x[i];
 	return mean_x / (double) n;
 }
+
+void cov( double **A, int n, int m, double *mean, double **cov){
+	// covariance
+	for( int j=0;  j<m;  j++)
+		for( int jj=0; jj<m; jj++){
+			cov[j][jj] = 0;
+			for( int i=0;  i<n;  i++)
+				cov[j][jj] += (A[i][j] - mean[j])*(A[i][jj] - mean[jj]);
+			cov[j][jj] /= (double)(n-1);
+		}
+}
+
+
+
 double min( double *x, int n){
 	double min = x[0];
 	for( int i=1; i<n; i++)
 		min = fmin( min, x[i]);
 	return min;
+}
+void min( double *x, int n, double &xmin, int &imin){
+	imin = 0;
+	xmin = x[0];
+	for( int i=1; i<n; i++)
+	if( x[i] < xmin){
+		xmin = x[i];
+		imin =   i ;
+	}
 }
 int min( int x1, int x2){
 	if( x1 < x2)
@@ -163,19 +195,32 @@ double max( double *x, int n){
 	return max;
 }
 
-double *std2( double **x, double *m, int n, int d, VectorOrientation orientation){
+double *std2( double **x, double *m, int n, int d, char orientation){
 	double *s2 = (double*) malloc( d * sizeof(double));
 
-	for( int j=0; j<d; j++){
-		s2[j] = 0;
-		for( int i=0; i<n; i++){
-			s2[j] += pow( x[i][j] - m[j], 2);
-			/*if( isinf(s2[j])){
-				fprintf( stderr, "%i, %i: x=%e, m=%e\n", i,j, x[i][j], m[j]);
-			}*/
+	if( orientation == 1)
+		for( int j=0; j<d; j++){
+			s2[j] = 0;
+			for( int i=0; i<n; i++){
+				s2[j] += pow( x[i][j] - m[j], 2);
+				/*if( isinf(s2[j])){
+					fprintf( stderr, "%i, %i: x=%e, m=%e\n", i,j, x[i][j], m[j]);
+				}*/
+			}
+			s2[j] /= (double) n;
 		}
-		s2[j] /= (double) n;
-	}
+	else
+		for( int i=0; i<n; i++){
+			s2[i] = 0;
+			for( int j=0; j<d; j++){
+				s2[i] += pow( x[i][j] - m[i], 2);
+				/*if( isinf(s2[j])){
+					fprintf( stderr, "%i, %i: x=%e, m=%e\n", i,j, x[i][j], m[j]);
+				}*/
+			}
+			s2[i] /= (double) d;
+		}
+
 
 	return s2;
 }
@@ -236,7 +281,7 @@ void normrnd( double *rnd, int n, unsigned int *p_seed)
 	// Box-Muller
 
 	for( int i=0; i<n; i+=2){
-		double u1=unifrnd(double, p_seed), u2=unifrnd(double, p_seed);
+		double u1=unifrnd<double>( p_seed), u2=unifrnd<double>( p_seed);
 		rnd[i]   = sqrt(-2*log(u1))*cos(2*M_PI*u2);
 		if(i+1<n)
 		rnd[i+1] = sqrt(-2*log(u1))*sin(2*M_PI*u2);
@@ -245,6 +290,67 @@ void normrnd( double *rnd, int n, unsigned int *p_seed)
 double normrnd( unsigned int *p_seed)
 {
 	// Box-Muller
-	double u1=unifrnd(double, p_seed), u2=unifrnd(double, p_seed);
+	double u1=unifrnd<double>( p_seed), u2=unifrnd<double>( p_seed);
 	return sqrt(-2*log(u1))*cos(2*M_PI*u2);
 }
+
+double mvnpdf_helper( double *a, double **B, double *c, int n){
+
+	double rtn=0, tmpi;
+	for( int i=0; i<n; i++){
+		tmpi = 0;
+		for( int j=0; j<n; j++)
+			tmpi += a[j]*B[j][i];
+		rtn += tmpi*c[i];
+	}
+
+	return rtn;
+}
+
+double mvnpdf( const double *x, double *mean, double **inv_s2, double det_s2, int n)
+{
+	double x0[n];
+	for( int i=0; i<n; i++)
+		x0[i] = x[i] - mean[i];
+	return 1. / sqrt( pow(2*M_PI, n) * det_s2) * exp(-0.5*mvnpdf_helper( x0, inv_s2, x0,n));
+}
+
+double kdepdf( const double *x, double **samples, double **inv_s2, double det_s2, int n, int nsamples)
+{
+	double pdf = 0;
+	for( int i=0; i<nsamples; i++)
+		pdf += mvnpdf( x, samples[i], inv_s2, det_s2, n);
+	return pdf / (double)nsamples;
+}
+
+void mvnrnd( double *x, double *mean, double **s2, int n, unsigned int *p_seed)
+{
+	// sample from MVnorm dist around chosen point
+	double z[n];
+	normrnd( z, n, p_seed);
+
+	//fprintf( stderr, "Sample: ");
+	for( int i=0; i<n; i++){
+		x[i] = mean[i];
+		double tmp = 0;
+		for( int j=0; j<n; j++){
+			x[i] += s2[i][j] * z[j];
+			tmp += s2[i][j] * z[j];
+		}
+		//fprintf( stderr, "%e (%e) ", tmp, x[i]);
+	}
+	//fprintf( stderr, "\n");
+
+
+}
+
+#include <gsl/gsl_sort.h>
+#include <gsl/gsl_statistics_double.h>
+double quantile( double *x, int n, double f)
+{
+	double tmp[n];
+	for( int i=0; i<n; i++) tmp[i] = x[i];
+	gsl_sort( tmp, 1, n);
+	return gsl_stats_quantile_from_sorted_data ( tmp, 1, n, f);
+}
+

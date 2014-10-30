@@ -244,6 +244,49 @@ void decomposeGaussJordan( T** &A, T** &LR, int n) {
 }
 
 template <class T>
+void decompCholesky( T** &A, T** &L, int n) {
+
+	gsl_matrix *gsl_L = gsl_matrix_alloc( n, n);
+	for( int i=0; i<n; i++)
+		for( int j=0; j<n; j++){
+			gsl_L->data[i * gsl_L->tda + j] = A[i][j];
+		}
+
+	gsl_linalg_cholesky_decomp ( gsl_L);
+	//gsl_linalg_cholesky_invert ( gsl_L);
+
+	for( int i=0; i<n; i++){
+		for( int j=0; j<=i; j++){
+			L[i][j] = gsl_L->data[i * gsl_L->tda + j];
+		}
+		for( int j=i+1; j<n; j++)
+			L[i][j] = 0;
+	}
+
+	gsl_matrix_free( gsl_L);
+}
+
+template <class T>
+void decompCholeskyOwn( T** &A, T** &L, int n) {
+
+	for( int i=0; i<n; i++)
+		for( int j=0; j<=i; j++){
+			double Summe = A[i][j];
+			for( int k=0; k<=j-1; k++)
+				Summe = Summe - L[i][k] * L[j][k];
+			if( i > j){
+				L[i][j] = Summe / L[j][j];   // Untere Dreiecksmatrix
+				L[j][i] = 0.;                // Obere Dreiecksmatrix
+				//L[j][i] = Summe / A[j][j]; // Obere Dreiecksmatrix
+			}
+			else if( Summe > 0)          // Diagonalelement
+				L[i][i] = sqrt( Summe);       // ... ist immer groesser Null
+			else
+	            fprintf( stderr, "Matrix not positive definite\n");   // ERROR
+		}
+}
+
+template <class T>
 void invertGaussJordan( T** &a, T** &ainv, int n) {
 	int i, j;                    // Zeile, Spalte
 	int s;                       // Elimininationsschritt
@@ -588,6 +631,16 @@ void solveLinearSystem( T **A, T *b, T *x, int dim)
 	}
 	solveLinearSystemB<T>( A, b, x, dim, B);
 	freeMatrix( B, dim);
+}
+
+template <class T>
+void normalizeVector( T *x, int m){
+
+	T sum = 0;
+	for( int j=0; j<m; j++)
+		sum += x[j];
+	for( int j=0; j<m; j++)
+		x[j] /= sum;
 }
 
 template <class T>

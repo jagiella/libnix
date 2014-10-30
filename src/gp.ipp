@@ -343,7 +343,7 @@ void evalGradientSparse(
 	SparseMatrix<T> *K = new SparseMatrix<T>( n, n);
 	for( int i=0; i<n; i++){
 		for( int j=i; j<n; j++){
-			double value = Kfull[i][j] * factorize[i];
+			T value = Kfull[i][j] * factorize[i];
 			//if( fabs(value) > 1e-3)
 				K->setLast(i,j, value);
 			value = Kfull[i][j] * factorize[j];
@@ -372,11 +372,11 @@ void evalGradientSparse(
 		covVector( pcov, pXnewi, x, n, d, covFunc, theta);
 
 		// mean
-		double fnew_i = dotProduct<T>( pcov, ptmp, n);
+		T fnew_i = dotProduct<T>( pcov, ptmp, n);
 
 		for( int di=0; di<d; di++)
 		{
-			double dx = 1e-6;
+			T dx = 1e-6;
 			pXnewi[di] += dx;
 			covVector( pcov, pXnewi, x, n, d, covFunc, theta);
 			pXnewi[di] -= dx;
@@ -390,22 +390,22 @@ void evalGradientSparse(
 
 }
 
-
-void getHyperParameters( double **X, double *y, int n, int d, double *hyp){
+template <class T>
+void getHyperParameters( T **X, T *y, int n, int d, T *hyp){
 
 	// Scaling length = neighbor distance
-	double mindist_x[n];
-	double max_mindist_x=0;
-	double maxdist_y=0;
-	double mean_y = 0;
-	double min_y = y[0];
+	T mindist_x[n];
+	T max_mindist_x=0;
+	T maxdist_y=0;
+	T mean_y = 0;
+	T min_y = y[0];
 
 	for( int i=0; i<n; i++)
 		mindist_x[i] = 1e20;
 
 	for( int i=0; i<n; i++)
 		for( int j=i+1; j<n; j++){
-			double dist = 0;
+			T dist = 0;
 			for( int k=0; k<d; k++)
 				dist += pow( X[i][k] - X[j][k], 2);
 			mindist_x[i] = fmin( mindist_x[i], dist);
@@ -426,21 +426,23 @@ void getHyperParameters( double **X, double *y, int n, int d, double *hyp){
 	hyp[3] = mean_y;
 
 }
-void getHyperParameters( double *X, double *y, int n, double *hyp){
+
+template <class T>
+void getHyperParameters( T *X, T *y, int n, T *hyp){
 
 	// Scaling length = neighbor distance
-	double mindist_x[n];
-	double max_mindist_x=0;
-	double maxdist_y=0;
-	double mean_y = 0;
-	double min_y = y[0];
+	T mindist_x[n];
+	T max_mindist_x=0;
+	T maxdist_y=0;
+	T mean_y = 0;
+	T min_y = y[0];
 
 	for( int i=0; i<n; i++)
 		mindist_x[i] = 1e20;
 
 	for( int i=0; i<n; i++)
 		for( int j=i+1; j<n; j++){
-			double dist = pow( X[i] - X[j], 2);
+			T dist = pow( X[i] - X[j], 2);
 			mindist_x[i] = fmin( mindist_x[i], dist);
 			mindist_x[j] = fmin( mindist_x[j], dist);
 
@@ -456,10 +458,6 @@ void getHyperParameters( double *X, double *y, int n, double *hyp){
 	hyp[1] = log10( max_mindist_x)+1;
 	hyp[2] = log10( maxdist_y)+2;
 	hyp[3] = min_y;
-
-
-
-
 }
 
 #define GP_IPP

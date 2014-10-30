@@ -11,6 +11,8 @@
 
 // DATA STRUCTURES
 
+enum ParameterScaling { Linear, Logarithmic};
+
 typedef struct {
 	bool   Display;
 	double FinDiffRelStep;
@@ -20,6 +22,9 @@ typedef struct {
 	int    MaxFunEvals;
 	bool   GradObj;
 	int    MaxFunEvalsAvg;
+	char   ParameterScaling;
+	int    PopulationSize;
+	char   OutputFile[512];
 } optimoptions;
 
 
@@ -35,7 +40,7 @@ void LHS( T **x, int n, int d, unsigned int *seed){
 
 	for(int i=0;i<n;++i)
 		for(int j=0;j<d;++j)
-			x[i][j]=(i + unifrnd( T, seed)) / n;
+			x[i][j]=(i + unifrnd<T>( seed)) / n;
 
 	for (int i=n-1; i>=0; --i)
 		for(int j=0;j<d;++j)
@@ -56,7 +61,7 @@ void LHS( T **x, T *lb, T *ub, int n, int d, unsigned int *seed){
 	// uniformly distributed points
 	for(int i=0;i<n;++i)
 		for(int j=0;j<d;++j)
-			x[i][j]=(i + unifrnd( T, seed)) / n * (ub[j]-lb[j]) + lb[j];
+			x[i][j]=(i + unifrnd<T>( seed)) / n * (ub[j]-lb[j]) + lb[j];
 
 	// Shuffling
 	for (int i=n-1; i>=0; --i)
@@ -102,9 +107,29 @@ void multistart(
 		double **sol, int n);
 
 void gpopt(
-		double *x0, double *lb, double *ub, int dim,
-		double (*func) (int, const double*, double*, void*),
-		optimoptions *options, double *sol);
+		// input
+		double *x0, double *lb, double *ub, int dim, double (*func) (int, const double*, double*, void*),
+		// options
+		optimoptions *options,
+		// output
+		double *sol);
+
+void abc(
+			// input
+			double **X0, double *lb, double *ub, int dim, double (*func) (int, const double*, double*, void*), void*,
+			// options
+			optimoptions *options,
+			// output
+			double **sol, int n);
+
+void abcgp(
+			// input
+			double **X0, double *lb, double *ub, int dim, double (*func) (int, const double*, double*, void*), void*,
+			// options
+			optimoptions *options,
+			// output
+			double **sol, int n);
+
 
 
 #endif /* OPTIMIZATION_HPP_ */

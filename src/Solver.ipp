@@ -323,7 +323,7 @@ template <class T> void Solver<T>::setDegree( int newl)
 	}
 }
 
-#define RAND01 ((double)rand()/(RAND_MAX+1.))
+//#define RAND01 ((double)rand()/(RAND_MAX+1.))
 template <class T> int Solver<T>::SolveBiCGSTABl( SparseMatrix<T> *A, T *b, T *x0)
 // If A is symmetric positive matrix
 {
@@ -354,7 +354,7 @@ template <class T> int Solver<T>::SolveBiCGSTABl( SparseMatrix<T> *A, T *b, T *x
 
 	// u & r_tilde0
 	for( int i=0; i<N; i++){
-		r_tilde0[i] = RAND01;//r_hat[0][i];
+		r_tilde0[i] = unifrnd<double>();//r_hat[0][i];
 		u_hat[0][i]=0;
 	}
 
