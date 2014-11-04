@@ -606,7 +606,7 @@ void abc(
 
 	fprintf( stderr, " iteration  #fun eval acceptance    epsilon\n");
 
-	for( int it=0; it<options->MaxIter; it++){
+	for( int it=0; it<options->MaxIter || count_evals >= options->MaxFunEvals; it++){
 
 		n_new = 0;
 
@@ -798,7 +798,11 @@ void abc(
 
 		//fprintf( stderr, "mean\n");
 		mean( x_old, n_old, d, _mean, 2);
-		printVector( _mean, d, "%10e ");
+		if( options->ParameterScaling == Logarithmic){
+			log2lin( _mean, x_lin, d);
+			printVector( x_lin, d, "%10e ");
+		}else
+			printVector( _mean, d, "%10e ");
 
 		//fprintf( stderr, "cov\n");
 		cov(  x_old, n_old, d, _mean, _cov);
@@ -994,7 +998,7 @@ void abcgp(
 
 	fprintf( stderr, " iteration  #fun eval acceptance    epsilon\n");
 
-	for( int it=1; it<options->MaxIter; it++){
+	for( int it=1; it<options->MaxIter || count_evals >= options->MaxFunEvals; it++){
 
 		count_evals_per_iteration[it] = 0;
 
@@ -1023,6 +1027,12 @@ void abcgp(
 		//getKDESample(x,f,n, x_kde,f_kde,n_kde);
 		// covariance
 		mean( x_kde, n_kde, d, _mean, 2);
+		if( options->ParameterScaling == Logarithmic){
+			log2lin( _mean, x_lin, d);
+			printVector( x_lin, d, "%10e ");
+		}else
+			printVector( _mean, d, "%10e ");
+
 		cov(  x_kde, n_kde, d, _mean, _cov);
 		// determinant
 		detcov = determinantLU( _cov, d); //fprintf( stderr, "|cov| = %e\n", detcov);
@@ -1048,7 +1058,7 @@ void abcgp(
 			getHyperParameters( &x_tf[n_gp-n_lim], &f_gp[n_gp-n_lim], n_lim, d, phyp);
 		}else
 			getHyperParameters( &x_gp[n_gp-n_lim], &f_gp[n_gp-n_lim], n_lim, d, phyp);
-		printVector( hyp, 4, "%.2e ");
+		//printVector( hyp, 4, "%.2e ");
 
 		// K
 		double **K = allocMatrix<double>( n_gp, n_gp);
@@ -1176,7 +1186,7 @@ void abcgp(
 
 		n += n_new;
 
-		fprintf( stderr, "%10i %10i %9.3f%% %10.3e\n", it, count_evals, 100*(double)n_new/(options->MaxFunEvalsAvg*count_evals_per_iteration[it]), epsilon_kde);
+		fprintf( stderr, "%10i %10i %9.3f%% %10.3e\n", it, count_evals, 100*(double)n_new*options->MaxFunEvalsAvg/(count_evals_per_iteration[it]), epsilon_kde);
 
 
 
@@ -1191,7 +1201,7 @@ void abcgp(
 		}
 		fprintf( fp_population, "\n\n");
 		fclose(fp_population);
-
-
 	}
+
+	// copy solution
 }

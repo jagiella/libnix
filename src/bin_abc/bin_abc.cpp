@@ -50,12 +50,15 @@ int main( int argc, char **argv){
 //	sprintf( suffix, "%s", "output" );
 
 	optimoptions options = getoptions();
+	options.MaxFunEvalsAvg = 4;
+	options.MaxFunEvals    = 10000;
+	options.MaxIter		   = 100;
 
 	bool GP_Approximation = false;
 
 
 	char c;
-	while ((c = getopt (argc, argv, "m:l:u:n:o:LG")) != -1)
+	while ((c = getopt (argc, argv, "m:l:u:n:o:a:LG")) != -1)
 	switch (c){
 	      case 'm': { // function to minimize
 	  		if( strcmp( optarg, "tumor") == 0){
@@ -105,6 +108,7 @@ int main( int argc, char **argv){
 	      }break;
 
 	      case 'n': options.PopulationSize = atoi( optarg); break;
+	      case 'a': options.MaxFunEvalsAvg = atoi( optarg); break;
 
 	      case 'o': sprintf( options.OutputFile, "%s", optarg ); break;
 

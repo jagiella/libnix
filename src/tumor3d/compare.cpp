@@ -78,7 +78,7 @@ double compare( comparison_t d1, comparison_t d2, char mode ){
 				d1.x, d2_m, d1.dim);//                     v
 
 		for( int i=0; i<d1.dim; i++ ) // for all data points
-			if( inrange( d2.x[0], d1.x[i], d2.x[d2.dim-1]) )
+			if( inrange( d2.x[0], d1.x[i], d2.x[d2.dim-1]) && d1.s[i]>0)
 			negloglik += 0.5 * pow( (d1.m[i] - d2_m[i])/d1.s[i], 2);
 	}break;
 
@@ -93,7 +93,7 @@ double compare( comparison_t d1, comparison_t d2, char mode ){
 
 
 		for( int i=0; i<d1.dim; i++ ) // for all data points
-			if( inrange( d2.x[0], d1.x[i], d2.x[d2.dim-1]) )
+			if( inrange( d2.x[0], d1.x[i], d2.x[d2.dim-1])  && d1.s[i]>0)
 			negloglik += 0.5 * pow( (d1.m[i] - d2_y[i])/d1.s[i], 2);
 		}
 	}break;
@@ -116,7 +116,7 @@ int readFile( const char* filename, double **&cols, int ncol)
 	FILE *fp = fopen( filename, "r");
 	char buffer[1024], *ptr;
 
-	while( fgets( buffer, 1024, fp )){
+	while( fgets( buffer, 1024, fp ))if(buffer[0] != '#'){
 		ptr = buffer;
 		nrow++;
 
@@ -136,7 +136,8 @@ int readFileColumn( const char* filename, double *&col, int icol)
 	FILE *fp = fopen( filename, "r");
 	char buffer[1024], *ptr;
 
-	while( fgets( buffer, 1024, fp )){
+	while( fgets( buffer, 1024, fp ))
+	if(buffer[0] != '#'){
 		ptr = buffer;
 		nrow++;
 
@@ -147,6 +148,19 @@ int readFileColumn( const char* filename, double *&col, int icol)
 		col[nrow-1]  = strtof( ptr, &ptr) ;
 	}
 	fclose(fp);
+
+	return nrow;
+}
+
+int readFileColumn( char** filename, int n, double **&col, int icol)
+{
+	int nrow = 0;
+	double **old=col;
+	col = (double**)realloc( col, sizeof(double*)*n);
+	for( int i=0; i<n; i++){
+		if( old != col) col[i] = 0;
+		nrow = readFileColumn( filename[i], col[i], icol);
+	}
 
 	return nrow;
 }
@@ -164,15 +178,24 @@ int main( int argc, char **argv)
 {
 	// READ DATA
 
-	const char data_filename[] = "/Users/jagiella/Dropbox/Work/PUBLICATIONS/Paper-wp2-lungsys/data/SK-MES-1/SK-MES_Radius_O0.28_G25.dat";
+	char data_filename[1024];
 	comparison_t data_growthcurve = create_comparison();
+	sprintf( data_filename, "/Users/jagiella/Dropbox/Work/PUBLICATIONS/Paper-wp2-lungsys/data/SK-MES-1/SK-MES_Radius_O0.28_G25.dat");
 	data_growthcurve.dim = readFileColumn( data_filename, data_growthcurve.x, 0);
 	                        readFileColumn( data_filename, data_growthcurve.m, 1);
 	                        readFileColumn( data_filename, data_growthcurve.s, 2);
-
+	comparison_t data_KI67 = create_comparison();
+	sprintf( data_filename, "/Users/jagiella/Dropbox/Work/PUBLICATIONS/Paper-wp2-lungsys/data/SK-MES-1-CryoSections-MACBOOK/ConditionIII/T3/Ki67_MEDIAN_histDiv_StandardDerivation.dat");
+	data_KI67.dim = readFileColumn( data_filename, data_KI67.x, 0);
+					readFileColumn( data_filename, data_KI67.m, 3);
+					readFileColumn( data_filename, data_KI67.s, 11);
+	/*for( int i=0; i<data_KI67.dim; i++){
+			fprintf( stderr, "%e %e\n", data_KI67.x[i], data_KI67.m[i]);
+		}*/
 
 	// SIMULATE
 
+	bool writeRawDataToFile = false;
 	int n = 1;
 	int parc = 0;
 	char **parv = 0;
@@ -184,6 +207,7 @@ int main( int argc, char **argv)
 	addOption( parc, parv, "-x1");
 	addOption( parc, parv, "-y500");
 	addOption( parc, parv, "-RNoRadialProfiles");
+	addOption( parc, parv, "-RRadialProfilesTime17");
 	addOption( parc, parv, "-RNoSliceOutput");
 	addOption( parc, parv, "-k20");
 	addOption( parc, parv, "-RExponentialReentranceProbability");
@@ -192,41 +216,84 @@ int main( int argc, char **argv)
 	addOption( parc, parv, option);
 
 	for( int i=1; i<argc; i++){
-		switch(i){
-		case 1: sprintf( option, "-v%s", argv[i]); break;
-		case 2: sprintf( option, "-RReentranceProbabilityLength%s", argv[i]); break;
-		case 3: sprintf( option, "-RInitialRadius%s", argv[i]); break;
-		case 4: sprintf( option, "-RInitialQuiescentFraction%s", argv[i]); break;
-		case 5: sprintf( option, "-RECMProductionRate%s", argv[i]); break;
-		case 6: sprintf( option, "-RECMDegradationRate%s", argv[i]); break;
-		case 7: sprintf( option, "-RECMThresholdQuiescence%s", argv[i]); break;
+		if( argv[i][0] == 'R'){
+			writeRawDataToFile = true;
+		}else{
+			switch(i){
+			case 1: sprintf( option, "-v%s", argv[i]); break;
+			case 2: sprintf( option, "-RReentranceProbabilityLength%s", argv[i]); break;
+			case 3: sprintf( option, "-RInitialRadius%s", argv[i]); break;
+			case 4: sprintf( option, "-RInitialQuiescentFraction%s", argv[i]); break;
+			case 5: sprintf( option, "-RECMProductionRate%s", argv[i]); break;
+			case 6: sprintf( option, "-RECMDegradationRate%s", argv[i]); break;
+			case 7: sprintf( option, "-RECMThresholdQuiescence%s", argv[i]); break;
+			}
+			addOption( parc, parv, option);
 		}
-		addOption( parc, parv, option);
 	}
 
+	//fprintf(stderr, " SIM\n");
 	montecarlo( parc, parv);
+	//fprintf(stderr, "EMD SIM\n");
 
 	// read sim data
-	char sim_filename[512];
+	char **sim_filename = allocMatrix<char>( n, 1024);
+	for( int i=0; i<n; i++)
+		sprintf( sim_filename[i], "%s/rel%i.data.dat", simdir, i);
 	comparison_t sim_growthcurve = create_comparison();
 	sim_growthcurve.size = n;
-	sim_growthcurve.y = (double**)malloc( sim_growthcurve.size * sizeof(double*));
-	sprintf( sim_filename, "%s/rel0.data.dat", simdir);
-	sim_growthcurve.dim = readFileColumn( sim_filename, sim_growthcurve.x, 0);
+	sim_growthcurve.dim = readFileColumn( sim_filename[0], sim_growthcurve.x, 0);
+	sim_growthcurve.dim = readFileColumn( sim_filename, n, sim_growthcurve.y, 2);
 	for( int j=0; j<sim_growthcurve.dim; j++)
 		sim_growthcurve.x[j] /= 24.;
-	for( int i=0; i<sim_growthcurve.size; i++){
-		sprintf( sim_filename, "%s/rel%i.data.dat", simdir, i);
-		sim_growthcurve.y[i] = 0; readFileColumn( sim_filename, sim_growthcurve.y[i], 2);
-	}
+	//printVector<double>( sim_growthcurve.x, sim_growthcurve.dim, "%.2e ");
 
+	comparison_t sim_KI67 = create_comparison();
+	for( int i=0; i<n; i++)
+		sprintf( sim_filename[i], "%s/rel%i.radialProfiles_day16-17.pov.dat", simdir, i);
+	sim_KI67.size = n;
+	sim_KI67.dim = readFileColumn( sim_filename[0], sim_KI67.x, 0);
+	sim_KI67.dim = readFileColumn( sim_filename, n, sim_KI67.y, 3);
+	for(int i=0; i<sim_KI67.size; i++) for(int j=0; j<sim_KI67.dim; j++) if( isnan( sim_KI67.y[i][j]) ) sim_KI67.y[i][j] = 0;
 
 	// COMPARE
 
 	//double negLogLik = compare( data, sim, mean_vs_mean);
-	double negLogLik = compare( data_growthcurve, sim_growthcurve, mean_vs_single);
+	double negLogLik
+			= compare( data_growthcurve, sim_growthcurve, mean_vs_single) / data_growthcurve.dim
+			+ compare( data_KI67, sim_KI67, mean_vs_single) / data_KI67.dim;
 
-	fprintf( stdout, "%e\n", log10( negLogLik));
+	fprintf( stdout, "%e\n", log10( negLogLik) );
+
+	//
+	if( writeRawDataToFile){
+		FILE *fp;
+
+		fp = fopen( "raw.data.dat", "w+");
+		for( int i=0; i<data_growthcurve.dim; i++)
+			fprintf( fp, "%e %e %e\n", data_growthcurve.x[i], data_growthcurve.m[i], data_growthcurve.s[i]);
+		fclose( fp);
+		fp = fopen( "raw.sim.dat", "w+");
+		for( int i=0; i<sim_growthcurve.size; i++){
+			for( int j=0; j<sim_growthcurve.dim; j++)
+				fprintf( fp, "%e %e\n", sim_growthcurve.x[j], sim_growthcurve.y[i][j]);
+			fprintf( fp, "\n");
+		}
+		fclose( fp);
+
+		fp = fopen( "raw.KI67.data.dat", "w+");
+		for( int i=0; i<data_KI67.dim; i++)
+			fprintf( fp, "%e %e %e\n", data_KI67.x[i], data_KI67.m[i], data_KI67.s[i]);
+		fclose( fp);
+		fp = fopen( "raw.KI67.sim.dat", "w+");
+		for( int i=0; i<sim_KI67.size; i++){
+			for( int j=0; j<sim_KI67.dim; j++)
+				fprintf( fp, "%e %e\n", sim_KI67.x[j], sim_KI67.y[i][j]);
+			fprintf( fp, "\n");
+		}
+		fclose( fp);
+
+	}
 
 	char command[512];
 	sprintf( command, "rm -rf %s", simdir);

@@ -695,6 +695,23 @@ bool inbound( T *x, T lb, T ub, int d)
 			return false;
 	return true;
 }
+template <class T>
+bool inbound( T *x, T lb, T ub, int d, char mode)
+{
+	if( mode == 0){ // AND (all in bound)
+		for( int i=0; i<d; i++)
+			if( x[i] < lb || x[i] > ub)
+				return false;
+		return true;
+	}
+
+	if( mode == 1){ // OR (at least one in bound)
+		for( int i=0; i<d; i++)
+			if( x[i] >= lb && x[i] <= ub)
+				return true;
+		return false;
+	}
+}
 
 
 #define MATRIX_IPP

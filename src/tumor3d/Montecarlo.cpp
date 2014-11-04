@@ -32,6 +32,8 @@
 
 #include "DiffusionReactionEquation.hpp"
 
+#include "../matrix.hpp"
+
 #define MAX_CELLS 200000
 //#define TEST_STATIC_PROFIL
 
@@ -73,6 +75,7 @@ double TempTime = 0;
 #define MAGENTA		5
 #define CYAN		6
 #define	WHITE		7
+
 
 void fprinttextcolor(int fg) {
 	/* Command is the control command to the terminal */
@@ -191,27 +194,36 @@ void updateHistogram( AgentList *agentArray, int* histogram, int* histogramDivid
 		//	border = voronoiDiagram->searchClosestFreeVoronoiCell( agentArray->agents[a]->location[0], 100);
 
 			//fprintf(stderr, "\r[Agent %i]: Upd. Stats                 \b", a );
+		double dist = 1000000;
 		if (border) {
-			double dist = border->getDistanceTo(
+			dist = border->getDistanceTo(
 					agentArray->agents[a]->location[0])
 					* SPATIAL_UNIT;
-			for (int i = (dist - AGENT_DIAMETER > 0. ? (int) (dist - AGENT_DIAMETER) : 0);
-					i < (int) (dist); i++) {
-				histogram[i]++;
-				if (dividing)
-					histogramDividing[i]++;
-				if (necrotic)
-					histogramNecrotic[i]++;
-				if (free)
-					histogramFree[i]++;
-				histogramECM[i] +=
-						agentArray->agents[a]->location[0]->ecm;
-			}
 		} else {
-			fprintf(stderr, "No border found!\n");
-			//exit(0);
+			//fprintf(stderr, "No border found!\n");
+			// shortest distance to domain border
+			for( int i=0; i<DIMENSIONS; i++){
+				dist = fmin( dist, agentArray->agents[a]->location[0]->position[i]);
+				dist = fmin( dist, 100 /*pow(agentArray->countAgents, 1./DIMENSIONS)*/ - agentArray->agents[a]->location[0]->position[i]);
+			}
+			dist *= SPATIAL_UNIT;
 		}
+
+		for (int i = (dist - AGENT_DIAMETER > 0. ? (int) (dist - AGENT_DIAMETER) : 0);
+				i < (int) (dist); i++) {
+			histogram[i]++;
+			if (dividing)
+				histogramDividing[i]++;
+			if (necrotic)
+				histogramNecrotic[i]++;
+			if (free)
+				histogramFree[i]++;
+			histogramECM[i] +=
+					agentArray->agents[a]->location[0]->ecm;
+		}
+
 	}
+	//fprintf(stderr, "[finished]\n");
 
 }
 
@@ -644,8 +656,8 @@ double getAvgGlucose(AgentList *agentList) {
 	double N = 0;
 
 	for (int i = 0; i < agentList->countActiveAgents; i++) {
-		if (agentList->agents[i]->growingTumorCellCount > 0)
-			for (int ii = 0; ii < agentList->agents[i]->countLocations; ii++)
+		if (agentList->agents[i]->growingTumorCellCount > 0){
+			for (int ii = 0; ii < agentList->agents[i]->countLocations; ii++){
 				if (agentList->agents[i]->state == COMPARTMENT) {
 					avg +=
 							agentList->agents[i]->location[ii]->glucose
@@ -655,6 +667,8 @@ double getAvgGlucose(AgentList *agentList) {
 					avg += agentList->agents[i]->location[ii]->glucose;
 					N++;
 				}
+			}
+		}
 	}
 
 	return (N > 0. ? avg / N : 0.);
@@ -665,8 +679,8 @@ double getAvgOxygen(AgentList *agentList) {
 	double N = 0;
 
 	for (int i = 0; i < agentList->countActiveAgents; i++) {
-		if (agentList->agents[i]->growingTumorCellCount > 0)
-			for (int ii = 0; ii < agentList->agents[i]->countLocations; ii++)
+		if (agentList->agents[i]->growingTumorCellCount > 0){
+			for (int ii = 0; ii < agentList->agents[i]->countLocations; ii++){
 				if (agentList->agents[i]->state == COMPARTMENT) {
 					if (N == 0
 							|| avg
@@ -696,6 +710,8 @@ double getAvgOxygen(AgentList *agentList) {
 					//			avg += agentList->agents[i]->location[ii]->oxygen;
 					//			N ++;
 				}
+			}
+		}
 	}
 
 	return (N > 0. ? avg / N : 0.);
@@ -1696,7 +1712,10 @@ int montecarlo(int argc, char **argv)
 
 	bool NoRadialProfiles = false;
 	bool NoSliceOutput = false;
-	int RadialProfilesTime = 0;
+
+	int     RadialProfilesCount = 0;
+	double *RadialProfilesTime  = 0;
+
 
 #if( MONOD_KINETICS)
 	//double **OxygenConcentrations;
@@ -1803,7 +1822,11 @@ int montecarlo(int argc, char **argv)
 			} else if (strstr(optarg, "NoRadialProfiles") != 0) {
 				NoRadialProfiles = true;
 			} else if (strstr(optarg, "RadialProfilesTime") != 0) {
-				RadialProfilesTime = (int)value;
+
+				RadialProfilesCount++;
+				RadialProfilesTime = (double*) realloc( RadialProfilesTime, sizeof(double) * RadialProfilesCount);
+				RadialProfilesTime[RadialProfilesCount-1] = (int)value;
+
 			} else if (strstr(optarg, "apt") != 0) {
 				CellApoptosisRate = value;
 			} else if (strstr(optarg, "nec") != 0) {
@@ -4399,13 +4422,17 @@ int montecarlo(int argc, char **argv)
 													+ voronoiDiagram->boundaryThickness
 									&& GetPosition( selected_action->originalCell)[1]
 											< voronoiDiagram->xMax[1]
+#if DIMENSIONS == 3
 													- voronoiDiagram->boundaryThickness
 									&& GetPosition( selected_action->originalCell)[2]
 											> voronoiDiagram->xMin[2]
 													+ voronoiDiagram->boundaryThickness
 									&& GetPosition( selected_action->originalCell)[2]
 											< voronoiDiagram->xMax[2]
-													- voronoiDiagram->boundaryThickness)) {
+													- voronoiDiagram->boundaryThickness
+#endif
+							)
+						) {
 								Time = EndTime;
 								//EndTime = Time;
 							}
@@ -5206,15 +5233,24 @@ int montecarlo(int argc, char **argv)
 
 
 			if(!NoRadialProfiles ||
-					( RadialProfilesTime &&
-					  RadialProfilesTime <= (int)floor(Last_Time/24.) &&
-					  (int)floor(Last_Time/24.) < RadialProfilesTime + 1) ){
+					( RadialProfilesCount && inbound<double>( RadialProfilesTime, floor(Last_Time/24.), floor(Time/24.), 1) ) ){
 
-				if( ceil(Last_Time/24.) != ceil(Time/24.)){
+				// UPDATE
+				if( ceil(Last_Time/1) != ceil(Time/1)){
+					//***for( int hour=(int)ceil(Last_Time/1.); hour < (int)ceil(Time/1.); hour++ )
+					updateHistogram( agentArray, histogram, histogramDividing, histogramNecrotic, histogramFree, histogramECM);
+					//fprintf(stderr, "[Updated History]\n");
+				}
+
+
+				//***if( ceil(Last_Time/24.) != ceil(Time/24.))
+				for( int day=(int)ceil(Last_Time/24.); day < (int)ceil(Time/24.); day++ )
+				{
 					// WRITE TO FILE
 					//fprintf(stderr, "[Print Cells to Povray File]\n");
-					sprintf(outfilename, "%s/rel%i.radialProfiles_day%i-%i.pov", dirname, k, (int)floor(Last_Time/24.), (int)floor(Last_Time/24.) + 1);
-					agentArray->printToPovray(outfilename, voronoiDiagram);
+					//***sprintf(outfilename, "%s/rel%i.radialProfiles_day%i-%i.pov", dirname, k, (int)floor(Last_Time/24.), (int)ceil(Last_Time/24.));
+					sprintf(outfilename, "%s/rel%i.radialProfiles_day%i-%i.pov", dirname, k, day-1, day);
+					//agentArray->printToPovray(outfilename, voronoiDiagram);
 					//fprintf(stderr, "[Wrote Povray File]\n");
 					char filename2[512];
 					sprintf(filename2, "%s.dat", outfilename);
@@ -5254,10 +5290,6 @@ int montecarlo(int argc, char **argv)
 					//fprintf(stderr, "[Reset History]\n");
 				}
 
-				// UPDATE
-				if( ceil(Last_Time/1) != ceil(Time/1))
-				updateHistogram( agentArray, histogram, histogramDividing, histogramNecrotic, histogramFree, histogramECM);
-				//fprintf(stderr, "[Updated History]\n");
 			}
 
 

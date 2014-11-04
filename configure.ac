@@ -10,7 +10,6 @@ AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE
-#CC=${CC-/opt/local/bin/g++-mp-4.9}
 LDFLAGS="$LDFLAGS -L/opt/local/lib -L/opt/local/lib/gcc49"
 CPPFLAGS="$CPPFLAGS -I/opt/local/lib/gcc49/gcc/x86_64-apple-darwin14/4.9.1/include -I/opt/local/include"
 
@@ -20,7 +19,7 @@ AC_DISABLE_STATIC
 AC_PROG_LIBTOOL(libtool)
 
 # Checks for programs.
-AC_PROG_CXX
+AC_PROG_CXX([g++-mp-4.9 g++])
 AC_PROG_CC
 
 # Checks for libraries.
@@ -46,5 +45,6 @@ AC_CHECK_FUNCS([floor pow sqrt])
 AC_CONFIG_FILES([Makefile
                  src/tumor3d/Makefile
                  src/bin_abc/Makefile
+                 src/lunatick/Makefile
                  src/Makefile])
 AC_OUTPUT
