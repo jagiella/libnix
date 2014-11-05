@@ -1,6 +1,7 @@
 AUTOMAKE_OPTIONS = subdir-objects
 
-bin_PROGRAMS = lunatick
+#bin_PROGRAMS = lunatick
+EXTRA_PROGRAMS = lunatick
 
 lunatick_SOURCES = main.cpp
 lunatick_LDADD = -lncurses ../libnix.la
