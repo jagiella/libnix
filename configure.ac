@@ -30,6 +30,10 @@ AC_CHECK_LIB([gsl], [main])
 # FIXME: Replace `main' with a function in `-lgslcblas':
 AC_CHECK_LIB([gslcblas], [main])
 
+AC_CHECK_LIB([SDL2], [main], [HAS_LIBSDL2=1])
+AM_CONDITIONAL([USE_LIBSDL2], [test "$HAS_LIBSDL2" -eq 1])
+
+
 # Checks for header files.
 AC_CHECK_HEADERS([float.h stdint.h stdlib.h string.h unistd.h])
 
