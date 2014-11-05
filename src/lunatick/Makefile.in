@@ -97,7 +97,7 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_lunatick_OBJECTS = main.$(OBJEXT)
 lunatick_OBJECTS = $(am_lunatick_OBJECTS)
-lunatick_DEPENDENCIES =
+lunatick_DEPENDENCIES = ../libnix.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -286,8 +286,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
-lunatick_SOURCES = main.cpp 
-lunatick_LDADD = -lncurses 
+lunatick_SOURCES = main.cpp
+lunatick_LDADD = -lncurses ../libnix.la
 lunatick_LDFLAGS = -framework SDL2 -framework SDL2_image -framework SDL2_ttf
 all: all-am
 

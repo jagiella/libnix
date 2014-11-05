@@ -22,6 +22,8 @@
 #include "SDL2_image/SDL_image.h"
 #include "SDL2_ttf/SDL_ttf.h"
 
+#include "../tinyxml2.h"
+
 void *
 erealloc( void *v, size_t amt){
 	if( v == 0){
@@ -159,6 +161,8 @@ public:
 		 SDL_Texture *texture = SDL_CreateTextureFromSurface ( renderer, animations[index_animation][index_images]);
 		 //SDL_RenderClear( renderer);
 		 SDL_RenderCopy( renderer, texture, NULL, &rect);
+		 SDL_DestroyTexture(texture);
+
     };
 
     void move( char new_orientation){
@@ -228,14 +232,125 @@ public:
 
 };
 
+
+void getSDLinput( int *dpad){
+
+	SDL_Event event;
+
+	if( SDL_PollEvent( &event ) )
+			{
+				//printf("key event");
+
+				switch( event.type ){ /* Look for a keypress */
+				case SDL_KEYDOWN:     /* Check the SDLKey values and move change the coords */
+					switch( event.key.keysym.sym ){
+					case SDLK_LEFT:		dpad[0] = 1; break;
+					case SDLK_RIGHT:	dpad[1] = 1; break;
+					case SDLK_UP:		dpad[2] = 1; break;
+					case SDLK_DOWN:		dpad[3] = 1; break;
+					case SDLK_ESCAPE:	exit(0); break;
+					default: break;
+					} break;
+				case SDL_KEYUP:     /* Check the SDLKey values and move change the coords */
+					switch( event.key.keysym.sym ){
+					case SDLK_LEFT:		dpad[0] = 0; break;
+					case SDLK_RIGHT:	dpad[1] = 0; break;
+					case SDLK_UP:		dpad[2] = 0; break;
+					case SDLK_DOWN:		dpad[3] = 0; break;
+					default: break;
+					} break;
+				case SDL_JOYAXISMOTION:  /* Handle Joystick Motion */
+					//if ( ( event.jaxis.value < -3200 ) || (event.jaxis.value > 3200 ) )
+					{
+						if( event.jaxis.axis == 0)
+						{
+							//mvprintw(2,2,"SDL_JOYAXISMOTION %+6i", event.jaxis.value);
+
+							if( event.jaxis.value < -8000){
+								dpad[0] = 1;
+							}
+							else if( event.jaxis.value > 8000)
+								dpad[0] = -1;
+							else
+								dpad[0] = 0;
+
+						            /* Left-right movement code goes here */
+						}else
+
+							if( event.jaxis.axis == 1)
+							{
+								//mvprintw(3,3,"SDL_JOYAXISMOTION %+6i", event.jaxis.value);
+
+						            /* Up-Down movement code goes here */
+								if( event.jaxis.value < -8000){
+										dpad[2] = 1;
+									}
+									else if( event.jaxis.value > 8000)
+										dpad[2] = -1;
+									else
+										dpad[2] = 0;
+
+							}
+					}//else{
+						//dpad[0] = 1;
+						//dpad[2] = 0;
+					//}
+				    break;
+				}
+			}
+}
+
+void updateJumpingBall( int *dpad, int &o, float *x, float *v, float *a, float *max)
+{
+	v[0] = v[0] - dpad[0] + dpad[1];
+	v[1] = v[1] + (dpad[2] - dpad[3])*0.5;
+
+	for( int d=0; d<2; d++){
+
+		v[d] = 0.9*v[d] + 0.5*a[d];
+
+		// REFLECTIVE BORDER
+		if( x[d] < 1 || x[d] > max[d]){
+			if( d==0)
+				o = -o;
+			v[d] = -v[d];
+			x[d] = fmax(x[d],1);
+			x[d] = fmin(x[d],max[d]);
+		}
+
+
+		// TORUS
+		x[d] = x[d] + v[d];
+		//x[d] = fmod( x[d] + v[d] + max[d], max[d]);
+
+	}
+
+}
+
+
+void ncurses_printDpad( int *dpad, int offset_x, int offset_y){
+	mvprintw(offset_y+0, offset_x, "+---+");
+	mvprintw(offset_y+1, offset_x, "| %c |",                      (dpad[2]?'o':'.'));
+	mvprintw(offset_y+2, offset_x, "|%c%c%c|", (dpad[0]?'o':'.'), (dpad[3]?'o':'.'), (dpad[1]?'o':'.'));
+	mvprintw(offset_y+3, offset_x, "+---+");
+}
+
+void ncurses_printFrame( float *max){
+    for( int ix=0;ix<max[0]; ix++){ // horizontal
+   	 mvprintw(0, ix,   "-");
+   	 mvprintw(max[1], ix,   "-");
+    }
+    for( int iy=0;iy<max[1]; iy++){ // vertical
+   	 mvprintw(iy,0,    "|");
+   	 mvprintw(iy,max[0],   "|");
+    }
+
+}
+
 int main( int argc, char *argv[] )
 {
 
 
-	initscr();			/* Start curses mode 		  */
-	curs_set(0);
-	nodelay(stdscr, TRUE);
-	keypad(stdscr, TRUE);
 
 	float max[2]={50, 40};
 	float x[2] = {10,10};
@@ -248,7 +363,7 @@ int main( int argc, char *argv[] )
 
 	int input=0;
 
-	SDL_Event event;
+
 
     /* Initialise SDL */
      if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_JOYSTICK ) < 0){
@@ -279,6 +394,9 @@ int main( int argc, char *argv[] )
      link->addAnimation(  "ani_link_walk_front_%d.png");
      link->addAnimation(  "ani_link_walk_back_%d.png");*/
 
+     tinyxml2::XMLDocument doc;
+     doc.Parse( "newSpriteSheet.sprites" );
+     doc.Print();
 
     // link->addFrames( "Zelda%d.png");
           link->addAnimation(  "LinkA_walk_east%d.png");
@@ -286,9 +404,26 @@ int main( int argc, char *argv[] )
           link->addAnimation(  "LinkA_walk_south%d.png");
           link->addAnimation(  "LinkA_walk_north%d.png");
 
+  		// Background
+      	SDL_RWops *rwop	= SDL_RWFromFile( "dampes_house.png", "rb");
+  		SDL_Surface *background	= IMG_LoadPNG_RW( rwop);
+  		SDL_Texture *bg_texture = SDL_CreateTextureFromSurface ( ren, background);
+  		SDL_Rect bg_rect;
+  		bg_rect.x=0; bg_rect.y=0;bg_rect.w = 240; bg_rect.h = 160;
+
+  		// Font
+		int ptsize = 150;
+		TTF_Font* myFont = TTF_OpenFontIndex( "returnofganon/ReturnofGanon.ttf", ptsize,0);
+		SDL_Color fg; fg.r = 255; fg.b = 255; fg.g = 255;
+
+
      printf("%i joysticks were found.\n\n", SDL_NumJoysticks() );
      printf("The names of the joysticks are:\n");
 
+     initscr();			/* Start curses mode 		  */
+     curs_set(0);
+     nodelay(stdscr, TRUE);
+     keypad(stdscr, TRUE);
      for( int i=0; i < SDL_NumJoysticks(); i++ )
      {
     	 mvprintw(1,1,"    %s\n", SDL_JoystickNameForIndex(i));
@@ -299,117 +434,25 @@ int main( int argc, char *argv[] )
      joystick = SDL_JoystickOpen(0);
 
      // paint border
-     for( int ix=0;ix<max[0]; ix++){ // horizontal
-    	 mvprintw(0, ix,   "-");
-    	 mvprintw(max[1], ix,   "-");
-     }
-     for( int iy=0;iy<max[1]; iy++){ // vertical
-    	 mvprintw(iy,0,    "|");
-    	 mvprintw(iy,max[0],   "|");
-     }
+     ncurses_printFrame( max);
 
-	char sym = '+';
 	int dpad[4] = {0,0,0,0};
 
 	int i=0; bool inc=true;
 	while( 1 ){
 
-		/*int ret=SDL_PollEvent( &event );
-		if( ret )*/
-		if( SDL_PollEvent( &event ) )
-		{
-			//printf("key event");
-			sym='#';
-			switch( event.type ){ /* Look for a keypress */
-			case SDL_KEYDOWN:     /* Check the SDLKey values and move change the coords */
-				switch( event.key.keysym.sym ){
-				case SDLK_LEFT:		dpad[0] = 1; break;
-				case SDLK_RIGHT:	dpad[1] = 1; break;
-				case SDLK_UP:		dpad[2] = 1; break;
-				case SDLK_DOWN:		dpad[3] = 1; break;
-				default: break;
-				} break;
-			case SDL_KEYUP:     /* Check the SDLKey values and move change the coords */
-				switch( event.key.keysym.sym ){
-				case SDLK_LEFT:		dpad[0] = 0; break;
-				case SDLK_RIGHT:	dpad[1] = 0; break;
-				case SDLK_UP:		dpad[2] = 0; break;
-				case SDLK_DOWN:		dpad[3] = 0; break;
-				default: break;
-				} break;
-			case SDL_JOYAXISMOTION:  /* Handle Joystick Motion */
-				//if ( ( event.jaxis.value < -3200 ) || (event.jaxis.value > 3200 ) )
-				{
-					if( event.jaxis.axis == 0)
-					{
-						mvprintw(2,2,"SDL_JOYAXISMOTION %+6i", event.jaxis.value);
+		getSDLinput( dpad);
+		ncurses_printDpad( dpad, 50, 0);
 
-						if( event.jaxis.value < -8000){
-							dpad[0] = 1;
-						}
-						else if( event.jaxis.value > 8000)
-							dpad[0] = -1;
-						else
-							dpad[0] = 0;
-
-					            /* Left-right movement code goes here */
-					}else
-
-						if( event.jaxis.axis == 1)
-						{
-							mvprintw(3,3,"SDL_JOYAXISMOTION %+6i", event.jaxis.value);
-
-					            /* Up-Down movement code goes here */						if( event.jaxis.value < -8000){
-									dpad[2] = 1;
-								}
-								else if( event.jaxis.value > 8000)
-									dpad[2] = -1;
-								else
-									dpad[2] = 0;
-
-						}
-				}//else{
-					//dpad[0] = 1;
-					//dpad[2] = 0;
-				//}
-			    break;
-			}
-		}
-
-		mvprintw(0, 50, "+---+");
-		mvprintw(1, 50, "| %c |",                      (dpad[2]?'o':'.'));
-		mvprintw(2, 50, "|%c%c%c|", (dpad[0]?'o':'.'), (dpad[3]?'o':'.'), (dpad[1]?'o':'.'));
-		mvprintw(3, 50, "+---+");
-
-		mvprintw((int)(max[1]-x[1]), (int)x[0], " ", sym);
-		//x[0] = x[0] - dpad[0] + dpad[1];
-		//x[1] = x[1] + (dpad[2] - dpad[3])*0.5;
-
-		v[0] = v[0] - dpad[0] + dpad[1];
-		v[1] = v[1] + (dpad[2] - dpad[3])*0.5;
-
-		for( int d=0; d<2; d++){
-
-			v[d] = 0.9*v[d] + 0.5*a[d];
-
-			// REFLECTIVE BORDER
-			if( x[d] < 1 || x[d] > max[d]){
-				if( d==0)
-					o = -o;
-				v[d] = -v[d];
-				x[d] = fmax(x[d],1);
-				x[d] = fmin(x[d],max[d]);
-			}
-
-
-			// TORUS
-			x[d] = x[d] + v[d];
-			//x[d] = fmod( x[d] + v[d] + max[d], max[d]);
-
-		}
-
-		mvprintw((int)(max[1]-x[1]), (int)x[0], "%c", sym);
+		mvprintw((int)(max[1]-x[1]), (int)x[0], " ");
+		updateJumpingBall( dpad, o, x, v, a, max);
+		mvprintw((int)(max[1]-x[1]), (int)x[0], "#");
 		refresh();
+
+
+
+
+
 
 		// SDL ANIMATION
 		/*if(dpad[1]==1)
@@ -426,11 +469,6 @@ int main( int argc, char *argv[] )
 		SDL_RenderClear( ren);
 
 		// Background
-    	SDL_RWops *rwop	= SDL_RWFromFile( "dampes_house.png", "rb");
-		SDL_Surface *background	= IMG_LoadPNG_RW( rwop);
-		SDL_Texture *bg_texture = SDL_CreateTextureFromSurface ( ren, background);
-		SDL_Rect bg_rect;
-		bg_rect.x=0; bg_rect.y=0;bg_rect.w = 240; bg_rect.h = 160;
 		SDL_RenderCopy( ren, bg_texture, &bg_rect, 0);
 
 		// Character
@@ -453,23 +491,21 @@ int main( int argc, char *argv[] )
 //	    SDL_RenderClear(  ren);
 //	    SDL_RenderCopy(   ren, link->texture, &srcrect, &dstrect);
 
+		// TEXT
 		char dialogtext[512];
 		if( link->rect.x > 100)
 			sprintf(dialogtext, "Test!");
 		else
 			sprintf(dialogtext, "Down!");
-		int ptsize = 150;
-		TTF_Font* myFont = TTF_OpenFontIndex( "returnofganon/ReturnofGanon.ttf", ptsize,0);
-		SDL_Color fg;
-		fg.r = 255; fg.b = 255; fg.g = 255;
-		SDL_Surface * text = TTF_RenderText_Solid( myFont, dialogtext, fg);
+		SDL_Surface *text = TTF_RenderText_Solid( myFont, dialogtext, fg);
 		SDL_Texture *texture = SDL_CreateTextureFromSurface ( ren, text);
-
-		int w=10, h=10;
-		TTF_SizeText( myFont, dialogtext, &w, &h);
-
-		SDL_Rect dstrect = { 10, 10, w, ptsize };
+		int w, h; TTF_SizeText( myFont, dialogtext, &w, &h);
+		SDL_Rect dstrect = { 10, 10, w, h };
 		SDL_RenderCopy(   ren, texture, 0, &dstrect);
+		//delete text;
+		//delete texture;
+		SDL_FreeSurface(text);
+		SDL_DestroyTexture(texture);
 
 		SDL_RenderPresent(ren);
 
@@ -478,78 +514,6 @@ int main( int argc, char *argv[] )
 		 //usleep( 0.1*SECONDS );
 	}
 
-
-	do{
-
-
-		if ((input = getch()) != ERR) { /* Wait for user input */
-			/* user has pressed a key input */
-
-			switch( input){
-			case KEY_DOWN:
-				v[1]--; break;
-			case KEY_UP:
-				v[1]++; break;
-			case KEY_LEFT:
-				o = -1;
-				v[0]--; break;
-			case KEY_RIGHT:
-				o = 1;
-				v[0]++; break;
-			case ENTER:
-				// create blaster shot
-				blaster[blcount][0]=x[0];
-				blaster[blcount][1]=x[1];
-				blaster[blcount][2]=o; // orientation
-				blcount++;
-				break;
-			}
-			//ungetch(input);
-		}
-
-		mvprintw((int)(max[1]-x[1]), (int)x[0], " ");
-		for( int d=0; d<2; d++){
-
-			v[d] = 0.9*v[d] + 0.5*a[d];
-
-			// REFLECTIVE BORDER
-			if( x[d] < 1 || x[d] > max[d]){
-				if( d==0)
-					o = -o;
-				v[d] = -v[d];
-				x[d] = fmax(x[d],1);
-				x[d] = fmin(x[d],max[d]);
-			}
-
-
-			// TORUS
-			x[d] = x[d] + v[d];
-			//x[d] = fmod( x[d] + v[d] + max[d], max[d]);
-
-		}
-		mvprintw((int)(max[1]-x[1]), (int)x[0], "o");
-
-		// print blaster
-		for( int i=0; i<blcount; i++){
-			// erase
-			mvprintw((int)(max[1]-blaster[i][1]), (int)blaster[i][0], " ");
-
-			// move
-			blaster[i][0] += blaster[i][2];
-
-			mvprintw((int)(max[1]-blaster[i][1]), (int)blaster[i][0], "-");
-		}
-
-		mvprintw(0, max[0], "x = %.2f %.2f", x[0],x[1]);
-		mvprintw(1, max[0], "v = %.2f %.2f", v[0],v[1]);
-		mvprintw(2, max[0], "a = %.2f %.2f", a[0],a[1]);
-		mvprintw(3, max[0], "blasters = %d", blcount);
-
-		refresh();			/* Print it on to the real screen */
-		usleep( 0.1*SECONDS ); // microseconds
-		//printw("Hello World !!! -> %i", input);	/* Print Hello World		  */
-
-	}while( input != SPACE);
 
 	endwin();			/* End curses mode		  */
 
@@ -566,6 +530,8 @@ Uint32 get_pixel32( SDL_Surface *surface, int x, int y )
     return pixels[ ( y * surface->w ) + x ];
 }
 
+
+
 void put_pixel32( SDL_Surface *surface, int x, int y, Uint32 pixel )
 {
     //Convert the pixels to 32 bit
@@ -574,6 +540,8 @@ void put_pixel32( SDL_Surface *surface, int x, int y, Uint32 pixel )
     //Set the pixel
     pixels[ ( y * surface->w ) + x ] = pixel;
 }
+
+
 
 void flipHorizontally( SDL_Surface*& image )
 {
@@ -595,3 +563,4 @@ void flipHorizontally( SDL_Surface*& image )
     SDL_FreeSurface( image );
     image = flipped_image;
 }
+
