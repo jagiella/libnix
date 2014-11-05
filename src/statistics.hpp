@@ -31,7 +31,7 @@ double logLikelihood( double *v1, double *v2, double *s21, double *s22, int n);
 
 
 enum VectorOrientation {rowwise = 1, columnwise = 2};
-double *mean( double **x, int n, int d, VectorOrientation ori);
+double *mean( double **x, int n, int d, char orientation = 1);
 void    mean( double **x, int d, int n, double *mean_x, char orientation = 1);
 double  mean( double  *x, int n);
 double *std2(   double **x, double *m, int n, int d, char orientation = 1);

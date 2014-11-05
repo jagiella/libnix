@@ -83,7 +83,7 @@ double *mean( double **x, int n1, int n2, char orientation){
 	double *m;
 
 	switch( orientation){
-	case 1: // row wise
+	case rowwise: // row wise
 		m = (double*) malloc( n2 * sizeof(double));
 		for( int j=0; j<n2; j++){
 			m[j] = 0;
@@ -93,7 +93,7 @@ double *mean( double **x, int n1, int n2, char orientation){
 		}
 		break;
 
-	case 2: // column wise
+	case columnwise: // column wise
 		m = (double*) malloc( n1 * sizeof(double));
 		for( int j=0; j<n1; j++){
 			m[j] = 0;

@@ -686,7 +686,7 @@ void getGradient( double (*func) (int, const double*, double*, void*), double *x
 		for( int d=0; d<dim; d++)
 			if( it > 10 && uncertainty[d] <= 0){
 				median( grad, dim, maxit, Mgrad);
-				 for( int d=0; d<dim; d++)
+				 for( d=0; d<dim; d++)
 					 free( grad[d]);
 				 fprintf( stderr, "finish grad. estim. after %i iterations\nSEMy_dx=%.2e + SEMy=%.2e - fabs( My=%.2e-My_dx=%.2e)", it+1,
 						 SEMy_dx[d], SEMy, My, My_dx[d]);
