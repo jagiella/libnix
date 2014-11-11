@@ -77,7 +77,10 @@ public:
 
 
 
-void doThatStat( Cell* lattice[], double molecule[], int size, double contribution, double stat[], int length, double &progress, const char* filename, char stat_type, double *stat_out){
+bool doThatStat( Cell* lattice[], double molecule[], int size, double contribution, double stat[], int length, double &progress, const char* filename, char stat_type, double *stat_out){
+
+	bool complete = false;
+
 	// find outer border
 	int offset=size-1;
 	while( lattice[offset]==0) offset--;
@@ -104,6 +107,9 @@ void doThatStat( Cell* lattice[], double molecule[], int size, double contributi
 
 	// output and reset
 	if( progress >= 1.){
+
+		complete=true;
+
 #ifndef NO_FILE_OUTPUT
 		FILE *fp = fopen( filename, "w+");
 #endif
@@ -135,6 +141,8 @@ void doThatStat( Cell* lattice[], double molecule[], int size, double contributi
 		progress -= floor(progress);
 
 	}
+
+	return complete;
 }
 
 double oxyCon( double g, double o) {	double qmax=22, qmin=10, ko=0.03, kg=0.1;
@@ -360,8 +368,10 @@ int countCells( Cell* lattice[], int N)
 
 }*/
 
-double* model( int parc, double *parv)
+double* model( int parc, double *parv, double *epsilon_limit, double *data_m, double *data_s)
 {
+
+	double epsilon = 0;
 
 	// PARAMETERS
 	// initial condition
@@ -449,17 +459,17 @@ double* model( int parc, double *parv)
 	double statTUNEL_progress = 0;
 
 	double *mout = (double*) malloc( 2400 * sizeof(double));
-	double *growth_curve = mout;
-	double *KI67_17  = &mout[600];
-	double *KI67_24  = &mout[600+300];
-	double *ECM_17   = &mout[600+300+300];
-	double *ECM_24   = &mout[600+300+300+300];
-	double *TUNEL_17 = &mout[600+300+300+300+300];
-	double *TUNEL_24 = &mout[600+300+300+300+300+300];
+	int growth_curve = 0;
+	int KI67_17  = 600;
+	int KI67_24  = 600+300;
+	int ECM_17   = 600+300+300;
+	int ECM_24   = 600+300+300+300;
+	int TUNEL_17 = 600+300+300+300+300;
+	int TUNEL_24 = 600+300+300+300+300+300;
 	for( int i=0; i<2400; i++)
 		mout[i] = 0;
 
-	growth_curve[0] = InitialRadius;
+	(mout+growth_curve)[0] = InitialRadius;
 
 #ifndef	NO_FILE_OUTPUT
 	FILE *fp_growthcurve = fopen( "tmp.dat", "w+");
@@ -489,6 +499,11 @@ double* model( int parc, double *parv)
 	while( (STAT_OVER_TIME  && t<tend) ||
 		   (STAT_OVER_CELLS && last_cellCount<N))
 	{
+		if( epsilon_limit && epsilon > *epsilon_limit){
+			//fprintf( stderr, "Stop early\n");
+			return mout;
+		}
+
 		//fprintf( stderr, "k_sum = %e, cells=%i\n", k_sum, cells.size());
 		//for( int c=0; )
 
@@ -536,9 +551,16 @@ double* model( int parc, double *parv)
 
 
 	   if( 16< t/24 && t/24<=17 ){
-		   doThatStat( lattice, ecm, N, dt/24., statECM, stat_size, statECM_progress, "radial17ECM.dat", ECM, ECM_17);
-		   doThatStat( lattice, 0,   N, dt/24., stat,    stat_size, stat_progress,    "radial17.dat", Proliferation, KI67_17);
-	   	   doThatStat( lattice, 0,   N, dt/24., statTUNEL,stat_size,statTUNEL_progress,"radial24.dat", TUNEL, TUNEL_17);
+		   doThatStat( lattice, ecm, N, dt/24., statECM, stat_size, statECM_progress, "radial17ECM.dat", ECM, mout+ECM_17);
+		   doThatStat( lattice, 0,   N, dt/24., stat,    stat_size, stat_progress,    "radial17.dat", Proliferation, mout+KI67_17);
+	   	   bool complete = doThatStat( lattice, 0,   N, dt/24., statTUNEL,stat_size,statTUNEL_progress,"radial24.dat", TUNEL, mout+TUNEL_17);
+	   	   if( complete && epsilon_limit){
+	   		   for( int i=0; i<300; i++){
+	   			   epsilon -= logLikelihood( (mout+ECM_17)[i], (data_m+ECM_17)[i], (data_s+ECM_17)[i])
+	   					   -  logLikelihood( (mout+KI67_17)[i], (data_m+KI67_17)[i], (data_s+KI67_17)[i])
+	   					   -  logLikelihood( (mout+TUNEL_17)[i], (data_m+TUNEL_17)[i], (data_s+TUNEL_17)[i]);
+	   		   }
+	   	   }
 	   }
 
 	   /*if( t/24 < 17 && 17 < ((t+dt)/24) ){
@@ -550,9 +572,17 @@ double* model( int parc, double *parv)
 	   }*/
 
 	   if( 23< t/24 && t/24<=24 ){
-		   doThatStat( lattice, ecm, N, dt/24., statECM, stat_size, statECM_progress, "radial24ECM.dat", ECM, ECM_24);
-	   	   doThatStat( lattice, 0,   N, dt/24., stat,    stat_size, stat_progress,    "radial24.dat", Proliferation, KI67_24);
-	   	   doThatStat( lattice, 0,   N, dt/24., statTUNEL,stat_size, statTUNEL_progress,"radial24.dat", TUNEL, TUNEL_24);
+		   doThatStat( lattice, ecm, N, dt/24., statECM, stat_size, statECM_progress, "radial24ECM.dat", ECM, mout+ECM_24);
+	   	   doThatStat( lattice, 0,   N, dt/24., stat,    stat_size, stat_progress,    "radial24.dat", Proliferation, mout+KI67_24);
+	   	   bool complete = doThatStat( lattice, 0,   N, dt/24., statTUNEL,stat_size, statTUNEL_progress,"radial24.dat", TUNEL, mout+TUNEL_24);
+	   	   if( complete && epsilon_limit){
+	   		   for( int i=0; i<300; i++){
+	   			   epsilon -= logLikelihood( (mout+ECM_24)[i], (data_m+ECM_24)[i], (data_s+ECM_24)[i])
+	   					   -  logLikelihood( (mout+KI67_24)[i], (data_m+KI67_24)[i], (data_s+KI67_24)[i])
+	   					   -  logLikelihood( (mout+TUNEL_24)[i], (data_m+TUNEL_24)[i], (data_s+TUNEL_24)[i]);
+	   		   }
+	   	   }
+
 	   }
 
 	   // update molecule conc.
@@ -629,14 +659,16 @@ double* model( int parc, double *parv)
 #ifndef	NO_FILE_OUTPUT
 			   fprintf( fp_growthcurve, "%i\n ", last_cellCount);
 #endif
-			   growth_curve[i] = last_cellCount;
+			   (mout+growth_curve)[i] = last_cellCount;
+			   epsilon -= logLikelihood( (mout+growth_curve)[i], (data_m+growth_curve)[i], (data_s+growth_curve)[i]);
 		   }
 		   last=ceil(t);
 		   last_cellCount=countCells( lattice, N);
 #ifndef	NO_FILE_OUTPUT
 		   fprintf( fp_growthcurve, "%i\n ", last_cellCount);
 #endif
-		   growth_curve[last] = last_cellCount;
+		   (mout+growth_curve)[last] = last_cellCount;
+		   epsilon -= logLikelihood( (mout+growth_curve)[last], (data_m+growth_curve)[last], (data_s+growth_curve)[last]);
 	   }
 
 	   if( STAT_OVER_CELLS && last_cellCount != countCells( lattice, N))
@@ -667,7 +699,7 @@ double* model( int parc, double *parv)
 		delete( cells.at( cells.size()-1));
 		cells.pop_back();
 	}
-
+	//fprintf( stderr, "epsilon=%e\n", epsilon);
 	return mout;
 }
 
@@ -689,7 +721,7 @@ double* model( int parc, double *parv)
 
 
 
-double compare( int parc, double *parv1, double *parv2, int n1, int n2){
+double compare( int parc, double *parv1, double *parv2, int n1, int n2, double *epsilon){
 	char filename[1024];
 	FILE *fp;
 	int length = 600+300+300+300+300+300+300;
@@ -727,14 +759,16 @@ double compare( int parc, double *parv1, double *parv2, int n1, int n2){
 
 //	m_av1 = m_out[0];
 
+	m_av1  = mean( m_out1, n1, 2400, rowwise);
+	s2_av1 = std2( m_out1, m_av1, n1, 2400, rowwise);
 
 
 	// DATA 2
-
+	double epsilon_limit = 1e40;
 	for( int i=0; i<n2; i++){
 		//seed = time(NULL);
 		parv2[0] = rand_r(&seed);
-		m_out2[i] = model( parc, parv2);
+		m_out2[i] = model( parc, parv2, &epsilon_limit, m_av1, s2_av1);
 	}
 
 
@@ -744,8 +778,6 @@ double compare( int parc, double *parv1, double *parv2, int n1, int n2){
 
 	//KolmogorovSmirnoffTest( 300, m_av1.growth_curve, 300, m_av2.growth_curve);
 
-	m_av1  = mean( m_out1, n1, 2400, rowwise);
-	s2_av1 = std2( m_out1, m_av1, n1, 2400, rowwise);
 	m_av2 = mean( m_out2, n2, 2400, rowwise);
 	s2_av2 = std2( m_out2, m_av2, n2, 2400, rowwise);
 	double negloglik =	- logLikelihood( (double*)m_av1, (double*)m_av2, (double*)s2_av1, (double*)s2_av2, length);

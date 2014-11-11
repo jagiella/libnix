@@ -551,6 +551,7 @@ void abc(
 	unsigned int func_seed = 0;
 	//int binom_data[2] = { 24, 16};
 	//	int binom_data[2] = { 6, 4};
+	double quantile_value = 0.5;
 
 
 	int iCPU = 10;
@@ -606,7 +607,7 @@ void abc(
 
 	fprintf( stderr, " iteration  #fun eval acceptance    epsilon\n");
 
-	for( int it=0; it<options->MaxIter || count_evals >= options->MaxFunEvals; it++){
+	for( int it=0; it<options->MaxIter && count_evals < options->MaxFunEvals; it++){
 
 		n_new = 0;
 
@@ -769,10 +770,15 @@ void abc(
 //			fprintf( stderr, "%10i %10i %9.3f%% %10.3e\n", it, count_evals, 100*(double)n_new/count_evals_per_iteration[it], epsilon);
 			fprintf( stderr, "\r%10i %10i [%3i/%4i] %10.3e\r", it, count_evals, n_new, options->PopulationSize, epsilon);
 
+			//if( count_evals_per_iteration[it] >= 10 && (double)n_new/count_evals_per_iteration[it] < 0.25)
+			//	epsilon *= 1.1;
+
 		}
+		//if( /*count_evals >= 10 &&*/ (double)n_new/count_evals_per_iteration[it] < 0.25)
+		//	quantile_value *= 1.1;
 
 		normalizeVector( w_new, n_new);
-		epsilon = quantile( f_new, n_new, 0.5);
+		epsilon = quantile( f_new, n_new, quantile_value);
 
 		for( int i=0; i<n_new; i++){
 			for( int j=0; j<d; j++)

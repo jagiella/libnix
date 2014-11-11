@@ -22,15 +22,15 @@
 #include "SDL2_image/SDL_image.h"
 #include "SDL2_ttf/SDL_ttf.h"
 
-#include "../tinyxml2.h"
+#include "tinyxml2.h"
 
 void *
 erealloc( void *v, size_t amt){
 	if( v == 0){
-		fprintf(stderr, "malloc\n");
+		//fprintf(stderr, "malloc\n");
 		v = malloc(amt);
 	}else{
-		fprintf(stderr, "realloc\n");
+		//fprintf(stderr, "realloc\n");
 		v = realloc(v, amt);
 	}
     if( v == 0){
@@ -42,7 +42,7 @@ erealloc( void *v, size_t amt){
 
 char *mysprintf( char *filename, const char *fmt, int i){
 	sprintf( filename, fmt, i);
-	fprintf( stderr, "Test %s\n", filename);
+	//fprintf( stderr, "Test %s\n", filename);
 	return filename;
 }
 
@@ -66,6 +66,8 @@ public:
     SDL_Rect       rect;
     char           orientation;
 
+    SDL_RendererFlip flip;
+
     enum { right, left, up, down};
 
     Spirit( SDL_Renderer * renderer){
@@ -84,9 +86,9 @@ public:
 
 
         //addAnimation( pattern);
-    	spritesheet = IMG_Load("sprites-sheet-link.png");
+    	/*spritesheet = IMG_Load("sprites-sheet-link.png");
     	SDL_SetColorKey( spritesheet, SDL_TRUE, SDL_MapRGB( spritesheet->format, 255, 255, 255 ) );
-    	texture = SDL_CreateTextureFromSurface( renderer, spritesheet);
+    	texture = SDL_CreateTextureFromSurface( renderer, spritesheet);*/
 
         // init position & size
     	this->rect.x=0;
@@ -96,6 +98,7 @@ public:
 		//this->rect.h=48;//44;
 		//this->rect.w=34;//38;
 		this->orientation = right;
+		flip = SDL_FLIP_NONE;
 
     };
 
@@ -113,16 +116,12 @@ public:
 		int i = 0;
 		while( access( mysprintf( filename, pattern, i), F_OK ) != -1 )
 		{
-			fprintf( stderr, "*\n");
+//			fprintf( stderr, "*\n");
 			SDL_RWops *rwop	= SDL_RWFromFile( filename, "rb");
-	    	fprintf( stderr, "**\n");
+//	    	fprintf( stderr, "**\n");
 	    	if( i == 0)
 	    		this->animations[a] = (SDL_Surface**)erealloc( 0, sizeof(SDL_Surface*) * (i+10));
-	    	/*else{
-	    		SDL_Surface** tmp = (SDL_Surface**)erealloc( this->animation[a], sizeof(SDL_Surface*) * (i+1));
-	    		this->animations[a] = tmp;
-	    	}*/
-	    	fprintf( stderr, "***\n");
+//	    	fprintf( stderr, "***\n");
 			this->animations[a][i]	= IMG_LoadPNG_RW( rwop);
 			if( this->animations[a]==0 )
 				fprintf(stderr, "ERROR\n");
@@ -133,6 +132,70 @@ public:
 
 		this->count_images = (int*)erealloc( this->count_images, sizeof(int) * (a+1));
 		count_images[a] = i;
+
+    };
+
+    void loadFromFile( const char *pattern){
+
+    	tinyxml2::XMLDocument doc;
+    	doc.LoadFile( pattern );
+    	doc.Print();
+
+    	tinyxml2::XMLElement *animation = doc.FirstChildElement("Sprite")->FirstChildElement("Animation");
+    	while( animation){
+    		// NEW ANIMATION
+    		int a = count_animations;
+    		animations   = (SDL_Surface***)erealloc( this->animations, sizeof(SDL_Surface**) * (a+1));
+    		count_images = (int*)erealloc( this->count_images, sizeof(int) * (a+1));
+    		animations[a] = 0;
+    		animations[a] = (SDL_Surface**)erealloc( 0, sizeof(SDL_Surface*) * (10));
+			count_images[a] = 0;
+
+    		tinyxml2::XMLElement *frame = animation->FirstChildElement("Frame");
+    		int i=0;
+    		while( frame){
+    			// NEW FRAME
+    			SDL_RWops *rwop	= SDL_RWFromFile( frame->FirstAttribute()->Value(), "rb");
+    			animations[a][i] = IMG_LoadPNG_RW( rwop);
+    			i ++;
+
+    			frame = frame->NextSiblingElement();
+    		};
+
+
+    		count_images[a] = i;
+    		count_animations ++;
+    		animation = animation->NextSiblingElement();
+    	};
+
+    	//fprintf( stderr, (const char*) doc.FirstChildElement("Sprite")->FirstChildElement("Animation")->FirstChildElement("Frame")->FirstAttribute()->Value());
+
+
+    	/*int a = count_animations;
+    	this->animations = (SDL_Surface***)erealloc( this->animations, sizeof(SDL_Surface**) * (a+1));
+    	this->animations[a] = 0;
+
+    	char filename[128];
+
+		int i = 0;
+		while( access( mysprintf( filename, pattern, i), F_OK ) != -1 )
+		{
+//			fprintf( stderr, "*\n");
+			SDL_RWops *rwop	= SDL_RWFromFile( filename, "rb");
+//	    	fprintf( stderr, "**\n");
+	    	if( i == 0)
+	    		this->animations[a] = (SDL_Surface**)erealloc( 0, sizeof(SDL_Surface*) * (i+10));
+//	    	fprintf( stderr, "***\n");
+			this->animations[a][i]	= IMG_LoadPNG_RW( rwop);
+			if( this->animations[a]==0 )
+				fprintf(stderr, "ERROR\n");
+			i++;
+		}
+
+		count_animations ++;
+
+		this->count_images = (int*)erealloc( this->count_images, sizeof(int) * (a+1));
+		count_images[a] = i;*/
 
     };
 
@@ -160,12 +223,12 @@ public:
     	//SDL_Surface *surface = IMG_LoadPNG_RW( rwops);
 		 SDL_Texture *texture = SDL_CreateTextureFromSurface ( renderer, animations[index_animation][index_images]);
 		 //SDL_RenderClear( renderer);
-		 SDL_RenderCopy( renderer, texture, NULL, &rect);
+		 SDL_RenderCopyEx( renderer, texture, NULL, &rect, 0, 0, flip);
 		 SDL_DestroyTexture(texture);
 
     };
 
-    void move( char new_orientation){
+ /*   void move( char new_orientation){
     	if( !count_animations) return;
     	index_images = (index_images+1)%count_images[index_animation]; // frames
     	//index_images = (index_images + 1) % count_images[index_animation];
@@ -173,13 +236,12 @@ public:
     		if( orientation == right || new_orientation == right) for( int i=0; i<count_images[0]; i++) flipHorizontally( animations[0][i] );
 
     		switch( new_orientation){
-    		case left:	index_animation=0; break;
-    		case right: index_animation=0; break;
-    		case up: 	index_animation=2; break;
-    		case down:	index_animation=1; break;
+    		case left:	index_animation=0; flip = SDL_FLIP_HORIZONTAL; break;
+    		case right: index_animation=0; flip = SDL_FLIP_NONE; break;
+    		case up: 	index_animation=2; flip = SDL_FLIP_NONE; break;
+    		case down:	index_animation=1; flip = SDL_FLIP_NONE; break;
     		}
-/*    		for( int i=0; i<count_images; i++)
-    			flipHorizontally( image[i] );*/
+
         	orientation = new_orientation;
         	index_images = 0;
     	}
@@ -190,7 +252,7 @@ public:
     	case down:  rect.y+=5; break;
     	}
 
-    }
+    }*/
 
     void move( int h_axis, int v_axis){
 
@@ -202,7 +264,7 @@ public:
     	// change orientation?
     	char new_ori = orientation;
     	switch( h_axis ){
-    	case -1: new_ori=left; break;
+    	case -1: new_ori=left;  break;
     	case  0:  break;
     	case  1: new_ori=right; break;
     	}
@@ -216,10 +278,10 @@ public:
 
 
 			switch( new_ori){
-				case left:	index_animation=1; break;
-				case right: index_animation=0; break;
-				case up: 	index_animation=3; break;
-				case down:	index_animation=2; break;
+				case left:	index_animation=2; flip = SDL_FLIP_NONE; break;
+				case right: index_animation=2; flip = SDL_FLIP_HORIZONTAL;  break;
+				case up: 	index_animation=0; flip = SDL_FLIP_NONE;  break;
+				case down:	index_animation=1; flip = SDL_FLIP_NONE;  break;
 			}
     	}
     	orientation = new_ori;
@@ -388,22 +450,21 @@ int main( int argc, char *argv[] )
 
      // READ IMAGES
      Spirit *link = new Spirit( ren);
+
+     link->loadFromFile( "LinkA.sprites" );
      //link->addFrames( "Zelda%d.png");
 /*     link->addAnimation(  "ani_link_run_%d.png");
      link->addAnimation(  "ani_link_run_%d.png"); for( int i=0; i<link->count_images[0]; i++) flipHorizontally( link->animations[0][i] );
      link->addAnimation(  "ani_link_walk_front_%d.png");
      link->addAnimation(  "ani_link_walk_back_%d.png");*/
 
-     tinyxml2::XMLDocument doc;
-     doc.Parse( "newSpriteSheet.sprites" );
-     doc.Print();
 
     // link->addFrames( "Zelda%d.png");
-          link->addAnimation(  "LinkA_walk_east%d.png");
+ /*         link->addAnimation(  "LinkA_walk_east%d.png");
           link->addAnimation(  "LinkA_walk_east%d.png"); for( int i=0; i<link->count_images[0]; i++) flipHorizontally( link->animations[0][i] );
           link->addAnimation(  "LinkA_walk_south%d.png");
           link->addAnimation(  "LinkA_walk_north%d.png");
-
+*/
   		// Background
       	SDL_RWops *rwop	= SDL_RWFromFile( "dampes_house.png", "rb");
   		SDL_Surface *background	= IMG_LoadPNG_RW( rwop);
@@ -420,7 +481,8 @@ int main( int argc, char *argv[] )
      printf("%i joysticks were found.\n\n", SDL_NumJoysticks() );
      printf("The names of the joysticks are:\n");
 
-     initscr();			/* Start curses mode 		  */
+
+/*     initscr();			// Start curses mode
      curs_set(0);
      nodelay(stdscr, TRUE);
      keypad(stdscr, TRUE);
@@ -428,13 +490,13 @@ int main( int argc, char *argv[] )
      {
     	 mvprintw(1,1,"    %s\n", SDL_JoystickNameForIndex(i));
      }
-     SDL_Joystick *joystick;
-
-     SDL_JoystickEventState(SDL_ENABLE);
-     joystick = SDL_JoystickOpen(0);
-
      // paint border
      ncurses_printFrame( max);
+*/
+
+     SDL_JoystickEventState(SDL_ENABLE);
+     SDL_Joystick *joystick = SDL_JoystickOpen(0);
+
 
 	int dpad[4] = {0,0,0,0};
 
@@ -442,13 +504,13 @@ int main( int argc, char *argv[] )
 	while( 1 ){
 
 		getSDLinput( dpad);
-		ncurses_printDpad( dpad, 50, 0);
 
+/*		ncurses_printDpad( dpad, 50, 0);
 		mvprintw((int)(max[1]-x[1]), (int)x[0], " ");
 		updateJumpingBall( dpad, o, x, v, a, max);
 		mvprintw((int)(max[1]-x[1]), (int)x[0], "#");
 		refresh();
-
+*/
 
 
 
@@ -515,7 +577,7 @@ int main( int argc, char *argv[] )
 	}
 
 
-	endwin();			/* End curses mode		  */
+	//endwin();			/* End curses mode		  */
 
 	return 0;
 }

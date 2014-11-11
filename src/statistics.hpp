@@ -27,6 +27,8 @@ typedef struct{
 KSTestResult KolmogorovSmirnoffTest( int n1, double *x1, int n2, double *x2);
 
 double logLikelihood( double *v1, double *v2, double *s21, double *s22, int n);
+double logLikelihood( double v1, double v2, double s21);
+
 
 
 

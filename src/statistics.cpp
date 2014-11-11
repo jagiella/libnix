@@ -52,6 +52,13 @@ KSTestResult KolmogorovSmirnoffTest( int n1, double *x1, int n2, double *x2){
 }
 
 
+double logLikelihood( double v1, double v2, double s21){
+	if(s21==0)
+		return 0;
+	else
+		return - 0.5 * pow( v1 - v2, 2) / s21;// - 0.5 * log(2*M_PI*s21);
+}
+
 double logLikelihood( double *v1, double *v2, double *s21, double *s22, int n)
 {
 	double logL = 0;
@@ -64,7 +71,7 @@ double logLikelihood( double *v1, double *v2, double *s21, double *s22, int n)
 		for( int i=0; i<n; i++)
 			if( s21[i]>0){
 				double last = logL;
-				logL += - 0.5 * log(2*M_PI*s21[i]) - 0.5 * pow( v1[i] - v2[i], 2) / s21[i];
+				logL += logLikelihood( v1[i], v2[i], s21[i]);
 				if( isinf(logL) || isnan(logL) || isinf(-logL)){
 					fprintf( stderr, "%i: v1=%e, v2=%e, s21=%e -> %e + %e = %e -> %e\n", i, v1[i], v2[i], s21[i], - 0.5 * log(2*M_PI*s21[i]), - 0.5 * pow( v1[i] - v2[i], 2) / s21[i], - 0.5 * log(2*M_PI*s21[i]) - 0.5 * pow( v1[i] - v2[i], 2) / s21[i], last);
 										exit(0);
@@ -76,7 +83,6 @@ double logLikelihood( double *v1, double *v2, double *s21, double *s22, int n)
 
 	return logL;
 }
-
 
 
 double *mean( double **x, int n1, int n2, char orientation){
