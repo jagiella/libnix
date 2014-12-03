@@ -120,7 +120,7 @@ void abc(
 			// options
 			optimoptions *options,
 			// output
-			double **sol, int n);
+			double **&sol, int &n);
 
 void abcgp(
 			// input
@@ -128,7 +128,7 @@ void abcgp(
 			// options
 			optimoptions *options,
 			// output
-			double **sol, int n);
+			double **&sol, int &n);
 
 
 

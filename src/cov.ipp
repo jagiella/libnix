@@ -6,6 +6,27 @@
 //#include "mex.h"
 
 template <class T>
+T covWendland( T* &x1, T* &x2, int &d, T* &theta)
+{
+	T l  = exp(theta[1]);	assert( l>0);
+	T sf2= exp(theta[2]);
+
+
+	// distance
+	double r = 0;
+	for( int k=0; k<d; k++)
+		r += pow( x1[k] - x2[k], 2);
+	r = sqrt(r)/l;
+
+	// covariance
+	if(r<=1){
+		return sf2*pow(1-r,4)*(1+4*r);
+	}else{
+		return 0;
+	}
+}
+
+template <class T>
 T covSquaredExponential( T* &x1, T* &x2, int &d, T* &theta)
 {
 			// distance

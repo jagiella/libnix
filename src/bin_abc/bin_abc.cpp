@@ -22,9 +22,27 @@
 
 
 
+void usage(){
 
+	fprintf( stderr, "usage: nix-abc [OPTION(S)]\nOPTIONS:\n");
+	fprintf( stderr, " -m METHODE  is the function to optimize\n");
+	fprintf( stderr, "             either builtin (tumor, norm, binom)\n");
+	fprintf( stderr, "             or custom command\n");
+	fprintf( stderr, " -l LIST     lower bound(s) as comma divided list, e.g. -l 1,-2,1\n");
+	fprintf( stderr, " -u LIST     upper bound(s) as comma divided list, e.g. -u 3,0,10\n");
+	fprintf( stderr, " -n INT      population size\n");
+	fprintf( stderr, " -o FILENAME filename for output\n");
+	fprintf( stderr, " -L          perform optimization in logarithmic scaling\n");
+	fprintf( stderr, " -G          use speed-up by Gauss process approximation\n");
+}
 
 int main( int argc, char **argv){
+
+	if(argc<=1){
+		usage();
+		return 0;
+	}
+
 	srand(time(0));
 	// ABC parameters
 	int d = 2;
@@ -132,7 +150,7 @@ int main( int argc, char **argv){
 
 
 	double **sol = 0;
-	int n;
+	int n=0;
 
 	if( GP_Approximation)
 		abcgp(

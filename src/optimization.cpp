@@ -538,7 +538,7 @@ void abc(
 			// options
 			optimoptions *options,
 			// output
-			double **sol, int n)
+			double **&sol, int &n)
 {
 	srand(time(NULL));
 	// ABC parameters
@@ -723,6 +723,14 @@ void abc(
 						( (float)t_sampling  /count_evals)/CLOCKS_PER_SEC,
 						( (float)t_evaluation/count_evals)/CLOCKS_PER_SEC);
 
+				// COPY SOLUTION
+				n = options->PopulationSize;
+				sol = allocMatrix<double>( n, d);
+				for( int i=0; i<n; i++)
+					for( int j=0; j<d; j++)
+						sol[i][j] = x_old[i][j];
+				return;
+
 				// PRINT KDE
 				sprintf( filename, "%s.kde.dat", suffix);
 				FILE *fp_kde = fopen( filename, "w+");
@@ -886,7 +894,7 @@ void abcgp(
 			// options
 			optimoptions *options,
 			// output
-			double **sol, int n)
+			double **&sol, int &nsol)
 {
 	srand(time(NULL));
 	// ABC parameters
@@ -913,7 +921,7 @@ void abcgp(
 	bool TRANSFORM = true;
 
 
-
+	double (*covFunc) ( double* &, double* &, int &, double* &) = covWendland;
 
 
 
@@ -934,7 +942,7 @@ void abcgp(
 	f = (double*) malloc(n_max*sizeof(double));
 	s2= (double*) malloc(n_max*sizeof(double));
 	w = (double*) malloc(n_max*sizeof(double));
-	n = 0;
+	int n = 0;
 	//int n_avg = 4;
 
 	double *x_lin = 0;
@@ -1069,9 +1077,9 @@ void abcgp(
 		// K
 		double **K = allocMatrix<double>( n_gp, n_gp);
 		if( TRANSFORM)
-			covMatrix<double>( K, x_tf, n_gp,d, covMatern5, phyp);
+			covMatrix<double>( K, x_tf, n_gp,d, covFunc, phyp);
 		else
-			covMatrix<double>( K, x_gp, n_gp,d, covMatern5, phyp);
+			covMatrix<double>( K, x_gp, n_gp,d, covFunc, phyp);
 		for(int i=0; i<n_gp; i++)
 			K[i][i] += s2_gp[i] + pow(10,phyp[0]);
 
@@ -1085,9 +1093,9 @@ void abcgp(
 		double f_kde_gp[n_kde];
 		double s2_kde_gp[n_kde];
 		if( TRANSFORM)
-			evalVariance<double>( x_tf, f_gp, s2_gp, n_gp, x_tf, f_kde_gp, s2_kde_gp, n_kde, d, covMatern5, phyp, invK);
+			evalVariance<double>( x_tf, f_gp, s2_gp, n_gp, x_tf, f_kde_gp, s2_kde_gp, n_kde, d, covFunc, phyp, invK);
 		else
-			evalVariance<double>( x_gp, f_gp, s2_gp, n_gp, x_gp, f_kde_gp, s2_kde_gp, n_kde, d, covMatern5, phyp, invK);
+			evalVariance<double>( x_gp, f_gp, s2_gp, n_gp, x_gp, f_kde_gp, s2_kde_gp, n_kde, d, covFunc, phyp, invK);
 		double epsilon_gp = quantile( f_kde_gp, n_kde, 0.1);
 
 		//epsilon = quantile( f_kde, n_kde, 0.5);
@@ -1114,12 +1122,12 @@ void abcgp(
 
 			if( TRANSFORM){
 				transform( &x_new[n_new], &x_new_tf[n_new], 1, d, _mean, invcovL);
-				evalVariance<double>( x_tf, f_gp, s2_gp, n_gp, &x_new_tf[n_new], &f_new[n_new], &s2_new[n_new], 1, d, covMatern5, phyp, invK);
+				evalVariance<double>( x_tf, f_gp, s2_gp, n_gp, &x_new_tf[n_new], &f_new[n_new], &s2_new[n_new], 1, d, covFunc, phyp, invK);
 	//			double dummy;
-	//			evalVariance<double>( x_tf, f_gp, s2_gp, n_gp, &x_new_tf[n_new], &f_new[n_new], &dummy, 1, d, covMatern5, phyp, invK);
-	//			evalVariance<double>( x_tf, s2_gp, 0,    n_gp, &x_new_tf[n_new], &s2_new[n_new], &dummy, 1, d, covMatern5, phyp, invK);
+	//			evalVariance<double>( x_tf, f_gp, s2_gp, n_gp, &x_new_tf[n_new], &f_new[n_new], &dummy, 1, d, covFunc, phyp, invK);
+	//			evalVariance<double>( x_tf, s2_gp, 0,    n_gp, &x_new_tf[n_new], &s2_new[n_new], &dummy, 1, d, covFunc, phyp, invK);
 			}else
-				evalVariance<double>( x_gp, f_gp, s2_gp, n_gp, &x_new[n_new], &f_new[n_new], &s2_new[n_new], 1, d, covMatern5, phyp, invK);
+				evalVariance<double>( x_gp, f_gp, s2_gp, n_gp, &x_new[n_new], &f_new[n_new], &s2_new[n_new], 1, d, covFunc, phyp, invK);
 
 
 			// SAMPLE FROM GP
@@ -1174,9 +1182,9 @@ void abcgp(
 					/*for( int j=0; j<d; j++){
 						fprintf( fp_population, "%e ", _xt[j]);
 					}*/
-					evalVariance<double>( x_tf, f_gp, s2_gp, n_gp, &_pxt, &_f, &_s2, 1, d, covMatern5, phyp, invK);
+					evalVariance<double>( x_tf, f_gp, s2_gp, n_gp, &_pxt, &_f, &_s2, 1, d, covFunc, phyp, invK);
 				}else
-					evalVariance<double>( x_gp, f_gp, s2_gp, n_gp, &_px, &_f, &_s2, 1, d, covMatern5, phyp, invK);
+					evalVariance<double>( x_gp, f_gp, s2_gp, n_gp, &_px, &_f, &_s2, 1, d, covFunc, phyp, invK);
 
 				fprintf( fp_population, "%e %e %i %e\n", _f, _s2, count_evals, epsilon_kde);
 			}
@@ -1209,5 +1217,11 @@ void abcgp(
 		fclose(fp_population);
 	}
 
-	// copy solution
+	// COPY SOLUTION
+	nsol = options->PopulationSize;
+	sol = allocMatrix<double>( n, d);
+	for( int i=0; i<n; i++)
+		for( int j=0; j<d; j++)
+			sol[i][j] = x[n-nsol+i][j];
+	return;
 }

@@ -370,7 +370,7 @@ int countCells( Cell* lattice[], int N)
 
 double* model( int parc, double *parv, double *epsilon_limit, double *data_m, double *data_s)
 {
-
+	//fprintf(stderr, "[START SIM]\n");
 	double epsilon = 0;
 
 	// PARAMETERS
@@ -545,6 +545,7 @@ double* model( int parc, double *parv, double *epsilon_limit, double *data_m, do
 	   }
 
 	   // update rates
+		//fprintf( stderr, "update rates\n ");
 	   k_sum = updateRates( lattice, N, cells, minp, // input
 			   	   oxy, glc,
 			   	   processes, processcount);
@@ -586,6 +587,7 @@ double* model( int parc, double *parv, double *epsilon_limit, double *data_m, do
 	   }
 
 	   // update molecule conc.
+	   //fprintf( stderr, "update molecule conc.\n ");
 	   if(t >= last_update + update_interval){
 
 		   if( minp.USE_ECM)
@@ -660,7 +662,8 @@ double* model( int parc, double *parv, double *epsilon_limit, double *data_m, do
 			   fprintf( fp_growthcurve, "%i\n ", last_cellCount);
 #endif
 			   (mout+growth_curve)[i] = last_cellCount;
-			   epsilon -= logLikelihood( (mout+growth_curve)[i], (data_m+growth_curve)[i], (data_s+growth_curve)[i]);
+			   if( epsilon_limit)
+				   epsilon -= logLikelihood( (mout+growth_curve)[i], (data_m+growth_curve)[i], (data_s+growth_curve)[i]);
 		   }
 		   last=ceil(t);
 		   last_cellCount=countCells( lattice, N);
@@ -668,7 +671,8 @@ double* model( int parc, double *parv, double *epsilon_limit, double *data_m, do
 		   fprintf( fp_growthcurve, "%i\n ", last_cellCount);
 #endif
 		   (mout+growth_curve)[last] = last_cellCount;
-		   epsilon -= logLikelihood( (mout+growth_curve)[last], (data_m+growth_curve)[last], (data_s+growth_curve)[last]);
+		   if( epsilon_limit)
+			   epsilon -= logLikelihood( (mout+growth_curve)[last], (data_m+growth_curve)[last], (data_s+growth_curve)[last]);
 	   }
 
 	   if( STAT_OVER_CELLS && last_cellCount != countCells( lattice, N))
@@ -740,11 +744,13 @@ double compare( int parc, double *parv1, double *parv2, int n1, int n2, double *
 	sprintf( filename, "%u.bin", (unsigned int) hash_array( parv1, parc));
 	fp = fopen( filename, "rb");
 	if( fp){
+		//fprintf(stderr, "[READ DATA]\n");
 		for( int i=0; i<n1; i++){
 			m_out1[i] = (double*) malloc( length * sizeof(double));
 			fread( m_out1[i], sizeof(double), length, fp);
 		}
 	}else{
+		fprintf(stderr, "[CREATE DATA]\n");
 		for( int i=0; i<n1; i++){
 			//seed = time(NULL);
 			parv1[0] = rand_r(&seed);
