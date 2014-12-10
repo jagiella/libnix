@@ -100,7 +100,7 @@ int main( int argc, char **argv){
 	  			func = externalfuncPipe;
 	  #else*/
 	  			func = externalfuncFile;
-	  #endif
+	  //#endif
 	  		}
 	      }break;
 
