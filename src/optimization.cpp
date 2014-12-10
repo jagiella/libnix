@@ -16,6 +16,8 @@
 #include "optimization.hpp"
 #include "gp.hpp"
 
+extern double EpsilonLimit;
+
 optimoptions getoptions(){
 	optimoptions options;
 
@@ -34,6 +36,7 @@ optimoptions getoptions(){
 
 	// abc
 	options.PopulationSize = 100;
+	options.AllowInterception = false;
 
 	return options;
 }
@@ -574,6 +577,7 @@ void abc(
 	// init variables
 	fprintf( stderr, "INIT\n");
 	double epsilon = DBL_MAX;
+	EpsilonLimit   = DBL_MAX;
 	double **x_new, **x_old, **x_tmp, **x_par, *x_lin;
 	double  *f_new,  *f_old,  *f_tmp,  *f_par;
 	double  *w_new,  *w_old,  *w_tmp,  *w_par;
@@ -594,6 +598,7 @@ void abc(
 #endif
 	//printMatrix( x_old, n_old, d, "%10.3e ");
 
+	double x_best[d], f_best = DBL_MAX;
 
 	// stats
 	clock_t t, t_sampling = 0, t_evaluation = 0;
@@ -786,7 +791,13 @@ void abc(
 		//	quantile_value *= 1.1;
 
 		normalizeVector( w_new, n_new);
+//		EpsilonLimit = DBL_MAX;
+		//EpsilonLimit = epsilon;
 		epsilon = quantile( f_new, n_new, quantile_value);
+		if(	options->AllowInterception)
+			EpsilonLimit = epsilon;
+		else
+			EpsilonLimit = DBL_MAX;
 
 		for( int i=0; i<n_new; i++){
 			for( int j=0; j<d; j++)
@@ -810,13 +821,23 @@ void abc(
 		//fprintf( stderr, "[ ITERATION %i ]\n", it);
 		count_evals_per_iteration[it]=0;
 
-		//fprintf( stderr, "mean\n");
+		fprintf( stderr, "mean: ");
 		mean( x_old, n_old, d, _mean, 2);
 		if( options->ParameterScaling == Logarithmic){
 			log2lin( _mean, x_lin, d);
 			printVector( x_lin, d, "%10e ");
 		}else
 			printVector( _mean, d, "%10e ");
+
+		int i_temp; double f_temp;
+		min( f_old, n_old, f_temp, i_temp);
+		if( f_best > f_temp){
+			f_best = f_temp;
+			for( int i=0; i<d; i++)
+				x_best[i] = x_old[i_temp][i];
+		}
+		fprintf( stderr, "best: ");
+		printVector( x_best, d, "%10e ");
 
 		//fprintf( stderr, "cov\n");
 		cov(  x_old, n_old, d, _mean, _cov);
@@ -1012,7 +1033,7 @@ void abcgp(
 
 	fprintf( stderr, " iteration  #fun eval acceptance    epsilon\n");
 
-	for( int it=1; it<options->MaxIter || count_evals >= options->MaxFunEvals; it++){
+	for( int it=1; it<options->MaxIter && count_evals < options->MaxFunEvals; it++){
 
 		count_evals_per_iteration[it] = 0;
 

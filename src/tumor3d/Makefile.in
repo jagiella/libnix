@@ -97,6 +97,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_nix_compare2d_OBJECTS = nix_compare2d-compare.$(OBJEXT) \
+	nix_compare2d-AsciiIO.$(OBJEXT) \
 	nix_compare2d-Montecarlo.$(OBJEXT) \
 	nix_compare2d-Agent.$(OBJEXT) \
 	nix_compare2d-Angiogenesis.$(OBJEXT) \
@@ -124,6 +125,7 @@ nix_compare2d_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(nix_compare2d_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
 am_nix_compare3d_OBJECTS = nix_compare3d-compare.$(OBJEXT) \
+	nix_compare3d-AsciiIO.$(OBJEXT) \
 	nix_compare3d-Montecarlo.$(OBJEXT) \
 	nix_compare3d-Agent.$(OBJEXT) \
 	nix_compare3d-Angiogenesis.$(OBJEXT) \
@@ -147,8 +149,8 @@ nix_compare3d_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(nix_compare3d_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
 am_nix_tumor2d_OBJECTS = nix_tumor2d-main.$(OBJEXT) \
-	nix_tumor2d-Montecarlo.$(OBJEXT) nix_tumor2d-Agent.$(OBJEXT) \
-	nix_tumor2d-Angiogenesis.$(OBJEXT) \
+	nix_tumor2d-AsciiIO.$(OBJEXT) nix_tumor2d-Montecarlo.$(OBJEXT) \
+	nix_tumor2d-Agent.$(OBJEXT) nix_tumor2d-Angiogenesis.$(OBJEXT) \
 	nix_tumor2d-CellProcesses.$(OBJEXT) \
 	nix_tumor2d-DiffusionReactionEquation.$(OBJEXT) \
 	nix_tumor2d-finiteDifferences.$(OBJEXT) \
@@ -163,13 +165,13 @@ am_nix_tumor2d_OBJECTS = nix_tumor2d-main.$(OBJEXT) \
 	nix_tumor2d-VesselNetwork.$(OBJEXT) \
 	nix_tumor2d-VoronoiDiagramExtended.$(OBJEXT)
 nix_tumor2d_OBJECTS = $(am_nix_tumor2d_OBJECTS)
-nix_tumor2d_DEPENDENCIES =
+nix_tumor2d_DEPENDENCIES = ../libnix.la
 nix_tumor2d_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(nix_tumor2d_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_nix_tumor3d_OBJECTS = nix_tumor3d-main.$(OBJEXT) \
-	nix_tumor3d-Montecarlo.$(OBJEXT) nix_tumor3d-Agent.$(OBJEXT) \
-	nix_tumor3d-Angiogenesis.$(OBJEXT) \
+	nix_tumor3d-AsciiIO.$(OBJEXT) nix_tumor3d-Montecarlo.$(OBJEXT) \
+	nix_tumor3d-Agent.$(OBJEXT) nix_tumor3d-Angiogenesis.$(OBJEXT) \
 	nix_tumor3d-CellProcesses.$(OBJEXT) \
 	nix_tumor3d-DiffusionReactionEquation.$(OBJEXT) \
 	nix_tumor3d-finiteDifferences.$(OBJEXT) \
@@ -184,7 +186,7 @@ am_nix_tumor3d_OBJECTS = nix_tumor3d-main.$(OBJEXT) \
 	nix_tumor3d-VesselNetwork.$(OBJEXT) \
 	nix_tumor3d-VoronoiDiagramExtended.$(OBJEXT)
 nix_tumor3d_OBJECTS = $(am_nix_tumor3d_OBJECTS)
-nix_tumor3d_DEPENDENCIES =
+nix_tumor3d_DEPENDENCIES = ../libnix.la
 nix_tumor3d_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(nix_tumor3d_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -371,18 +373,18 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
-nix_tumor3d_SOURCES = main.cpp Montecarlo.cpp Agent.cpp Angiogenesis.cpp CellProcesses.cpp DiffusionReactionEquation.cpp finiteDifferences.cpp Interpolation.cpp Mathematix.cpp Molecule.cpp SparseMatrix.cpp Substrate.cpp EpsIO.cpp PovrayIO.cpp Vessel_Graph.cpp Vessel_Unit.cpp VesselNetwork.cpp VoronoiDiagramExtended.cpp
-nix_tumor3d_LDADD = -lm 
+nix_tumor3d_SOURCES = main.cpp AsciiIO.cpp Montecarlo.cpp Agent.cpp Angiogenesis.cpp CellProcesses.cpp DiffusionReactionEquation.cpp finiteDifferences.cpp Interpolation.cpp Mathematix.cpp Molecule.cpp SparseMatrix.cpp Substrate.cpp EpsIO.cpp PovrayIO.cpp Vessel_Graph.cpp Vessel_Unit.cpp VesselNetwork.cpp VoronoiDiagramExtended.cpp
+nix_tumor3d_LDADD = -lm  ../libnix.la
 nix_tumor3d_CXXFLAGS = -DDIMENSIONS=3
-nix_tumor2d_SOURCES = main.cpp Montecarlo.cpp Agent.cpp Angiogenesis.cpp CellProcesses.cpp DiffusionReactionEquation.cpp finiteDifferences.cpp Interpolation.cpp Mathematix.cpp Molecule.cpp SparseMatrix.cpp Substrate.cpp EpsIO.cpp PovrayIO.cpp Vessel_Graph.cpp Vessel_Unit.cpp VesselNetwork.cpp VoronoiDiagramExtended.cpp
-nix_tumor2d_LDADD = -lm 
+nix_tumor2d_SOURCES = main.cpp AsciiIO.cpp Montecarlo.cpp Agent.cpp Angiogenesis.cpp CellProcesses.cpp DiffusionReactionEquation.cpp finiteDifferences.cpp Interpolation.cpp Mathematix.cpp Molecule.cpp SparseMatrix.cpp Substrate.cpp EpsIO.cpp PovrayIO.cpp Vessel_Graph.cpp Vessel_Unit.cpp VesselNetwork.cpp VoronoiDiagramExtended.cpp
+nix_tumor2d_LDADD = -lm  ../libnix.la
 nix_tumor2d_CXXFLAGS = -DDIMENSIONS=2
-nix_compare3d_SOURCES = compare.cpp Montecarlo.cpp Agent.cpp Angiogenesis.cpp CellProcesses.cpp DiffusionReactionEquation.cpp finiteDifferences.cpp Interpolation.cpp Mathematix.cpp Molecule.cpp SparseMatrix.cpp Substrate.cpp EpsIO.cpp PovrayIO.cpp Vessel_Graph.cpp Vessel_Unit.cpp VesselNetwork.cpp VoronoiDiagramExtended.cpp
+nix_compare3d_SOURCES = compare.cpp AsciiIO.cpp Montecarlo.cpp Agent.cpp Angiogenesis.cpp CellProcesses.cpp DiffusionReactionEquation.cpp finiteDifferences.cpp Interpolation.cpp Mathematix.cpp Molecule.cpp SparseMatrix.cpp Substrate.cpp EpsIO.cpp PovrayIO.cpp Vessel_Graph.cpp Vessel_Unit.cpp VesselNetwork.cpp VoronoiDiagramExtended.cpp
 nix_compare3d_LDADD = -lm ../libnix.la
-nix_compare3d_CXXFLAGS = -DDIMENSIONS=3
-nix_compare2d_SOURCES = compare.cpp Montecarlo.cpp Agent.cpp Angiogenesis.cpp CellProcesses.cpp DiffusionReactionEquation.cpp finiteDifferences.cpp Interpolation.cpp Mathematix.cpp Molecule.cpp SparseMatrix.cpp Substrate.cpp EpsIO.cpp PovrayIO.cpp Vessel_Graph.cpp Vessel_Unit.cpp VesselNetwork.cpp VoronoiDiagramExtended.cpp
+nix_compare3d_CXXFLAGS = -DDIMENSIONS=3 -g
+nix_compare2d_SOURCES = compare.cpp AsciiIO.cpp Montecarlo.cpp Agent.cpp Angiogenesis.cpp CellProcesses.cpp DiffusionReactionEquation.cpp finiteDifferences.cpp Interpolation.cpp Mathematix.cpp Molecule.cpp SparseMatrix.cpp Substrate.cpp EpsIO.cpp PovrayIO.cpp Vessel_Graph.cpp Vessel_Unit.cpp VesselNetwork.cpp VoronoiDiagramExtended.cpp
 nix_compare2d_LDADD = -lm ../libnix.la
-nix_compare2d_CXXFLAGS = -DDIMENSIONS=2
+nix_compare2d_CXXFLAGS = -DDIMENSIONS=2 -g
 all: all-am
 
 .SUFFIXES:
@@ -491,6 +493,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_compare2d-Agent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_compare2d-Angiogenesis.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_compare2d-AsciiIO.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_compare2d-CellProcesses.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_compare2d-DiffusionReactionEquation.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_compare2d-EpsIO.Po@am__quote@
@@ -509,6 +512,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_compare2d-finiteDifferences.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_compare3d-Agent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_compare3d-Angiogenesis.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_compare3d-AsciiIO.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_compare3d-CellProcesses.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_compare3d-DiffusionReactionEquation.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_compare3d-EpsIO.Po@am__quote@
@@ -527,6 +531,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_compare3d-finiteDifferences.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_tumor2d-Agent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_tumor2d-Angiogenesis.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_tumor2d-AsciiIO.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_tumor2d-CellProcesses.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_tumor2d-DiffusionReactionEquation.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_tumor2d-EpsIO.Po@am__quote@
@@ -545,6 +550,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_tumor2d-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_tumor3d-Agent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_tumor3d-Angiogenesis.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_tumor3d-AsciiIO.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_tumor3d-CellProcesses.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_tumor3d-DiffusionReactionEquation.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_tumor3d-EpsIO.Po@am__quote@
@@ -599,6 +605,20 @@ nix_compare2d-compare.obj: compare.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='compare.cpp' object='nix_compare2d-compare.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_compare2d_CXXFLAGS) $(CXXFLAGS) -c -o nix_compare2d-compare.obj `if test -f 'compare.cpp'; then $(CYGPATH_W) 'compare.cpp'; else $(CYGPATH_W) '$(srcdir)/compare.cpp'; fi`
+
+nix_compare2d-AsciiIO.o: AsciiIO.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_compare2d_CXXFLAGS) $(CXXFLAGS) -MT nix_compare2d-AsciiIO.o -MD -MP -MF $(DEPDIR)/nix_compare2d-AsciiIO.Tpo -c -o nix_compare2d-AsciiIO.o `test -f 'AsciiIO.cpp' || echo '$(srcdir)/'`AsciiIO.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/nix_compare2d-AsciiIO.Tpo $(DEPDIR)/nix_compare2d-AsciiIO.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='AsciiIO.cpp' object='nix_compare2d-AsciiIO.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_compare2d_CXXFLAGS) $(CXXFLAGS) -c -o nix_compare2d-AsciiIO.o `test -f 'AsciiIO.cpp' || echo '$(srcdir)/'`AsciiIO.cpp
+
+nix_compare2d-AsciiIO.obj: AsciiIO.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_compare2d_CXXFLAGS) $(CXXFLAGS) -MT nix_compare2d-AsciiIO.obj -MD -MP -MF $(DEPDIR)/nix_compare2d-AsciiIO.Tpo -c -o nix_compare2d-AsciiIO.obj `if test -f 'AsciiIO.cpp'; then $(CYGPATH_W) 'AsciiIO.cpp'; else $(CYGPATH_W) '$(srcdir)/AsciiIO.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/nix_compare2d-AsciiIO.Tpo $(DEPDIR)/nix_compare2d-AsciiIO.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='AsciiIO.cpp' object='nix_compare2d-AsciiIO.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_compare2d_CXXFLAGS) $(CXXFLAGS) -c -o nix_compare2d-AsciiIO.obj `if test -f 'AsciiIO.cpp'; then $(CYGPATH_W) 'AsciiIO.cpp'; else $(CYGPATH_W) '$(srcdir)/AsciiIO.cpp'; fi`
 
 nix_compare2d-Montecarlo.o: Montecarlo.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_compare2d_CXXFLAGS) $(CXXFLAGS) -MT nix_compare2d-Montecarlo.o -MD -MP -MF $(DEPDIR)/nix_compare2d-Montecarlo.Tpo -c -o nix_compare2d-Montecarlo.o `test -f 'Montecarlo.cpp' || echo '$(srcdir)/'`Montecarlo.cpp
@@ -852,6 +872,20 @@ nix_compare3d-compare.obj: compare.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_compare3d_CXXFLAGS) $(CXXFLAGS) -c -o nix_compare3d-compare.obj `if test -f 'compare.cpp'; then $(CYGPATH_W) 'compare.cpp'; else $(CYGPATH_W) '$(srcdir)/compare.cpp'; fi`
 
+nix_compare3d-AsciiIO.o: AsciiIO.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_compare3d_CXXFLAGS) $(CXXFLAGS) -MT nix_compare3d-AsciiIO.o -MD -MP -MF $(DEPDIR)/nix_compare3d-AsciiIO.Tpo -c -o nix_compare3d-AsciiIO.o `test -f 'AsciiIO.cpp' || echo '$(srcdir)/'`AsciiIO.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/nix_compare3d-AsciiIO.Tpo $(DEPDIR)/nix_compare3d-AsciiIO.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='AsciiIO.cpp' object='nix_compare3d-AsciiIO.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_compare3d_CXXFLAGS) $(CXXFLAGS) -c -o nix_compare3d-AsciiIO.o `test -f 'AsciiIO.cpp' || echo '$(srcdir)/'`AsciiIO.cpp
+
+nix_compare3d-AsciiIO.obj: AsciiIO.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_compare3d_CXXFLAGS) $(CXXFLAGS) -MT nix_compare3d-AsciiIO.obj -MD -MP -MF $(DEPDIR)/nix_compare3d-AsciiIO.Tpo -c -o nix_compare3d-AsciiIO.obj `if test -f 'AsciiIO.cpp'; then $(CYGPATH_W) 'AsciiIO.cpp'; else $(CYGPATH_W) '$(srcdir)/AsciiIO.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/nix_compare3d-AsciiIO.Tpo $(DEPDIR)/nix_compare3d-AsciiIO.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='AsciiIO.cpp' object='nix_compare3d-AsciiIO.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_compare3d_CXXFLAGS) $(CXXFLAGS) -c -o nix_compare3d-AsciiIO.obj `if test -f 'AsciiIO.cpp'; then $(CYGPATH_W) 'AsciiIO.cpp'; else $(CYGPATH_W) '$(srcdir)/AsciiIO.cpp'; fi`
+
 nix_compare3d-Montecarlo.o: Montecarlo.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_compare3d_CXXFLAGS) $(CXXFLAGS) -MT nix_compare3d-Montecarlo.o -MD -MP -MF $(DEPDIR)/nix_compare3d-Montecarlo.Tpo -c -o nix_compare3d-Montecarlo.o `test -f 'Montecarlo.cpp' || echo '$(srcdir)/'`Montecarlo.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/nix_compare3d-Montecarlo.Tpo $(DEPDIR)/nix_compare3d-Montecarlo.Po
@@ -1104,6 +1138,20 @@ nix_tumor2d-main.obj: main.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_tumor2d_CXXFLAGS) $(CXXFLAGS) -c -o nix_tumor2d-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
 
+nix_tumor2d-AsciiIO.o: AsciiIO.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_tumor2d_CXXFLAGS) $(CXXFLAGS) -MT nix_tumor2d-AsciiIO.o -MD -MP -MF $(DEPDIR)/nix_tumor2d-AsciiIO.Tpo -c -o nix_tumor2d-AsciiIO.o `test -f 'AsciiIO.cpp' || echo '$(srcdir)/'`AsciiIO.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/nix_tumor2d-AsciiIO.Tpo $(DEPDIR)/nix_tumor2d-AsciiIO.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='AsciiIO.cpp' object='nix_tumor2d-AsciiIO.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_tumor2d_CXXFLAGS) $(CXXFLAGS) -c -o nix_tumor2d-AsciiIO.o `test -f 'AsciiIO.cpp' || echo '$(srcdir)/'`AsciiIO.cpp
+
+nix_tumor2d-AsciiIO.obj: AsciiIO.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_tumor2d_CXXFLAGS) $(CXXFLAGS) -MT nix_tumor2d-AsciiIO.obj -MD -MP -MF $(DEPDIR)/nix_tumor2d-AsciiIO.Tpo -c -o nix_tumor2d-AsciiIO.obj `if test -f 'AsciiIO.cpp'; then $(CYGPATH_W) 'AsciiIO.cpp'; else $(CYGPATH_W) '$(srcdir)/AsciiIO.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/nix_tumor2d-AsciiIO.Tpo $(DEPDIR)/nix_tumor2d-AsciiIO.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='AsciiIO.cpp' object='nix_tumor2d-AsciiIO.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_tumor2d_CXXFLAGS) $(CXXFLAGS) -c -o nix_tumor2d-AsciiIO.obj `if test -f 'AsciiIO.cpp'; then $(CYGPATH_W) 'AsciiIO.cpp'; else $(CYGPATH_W) '$(srcdir)/AsciiIO.cpp'; fi`
+
 nix_tumor2d-Montecarlo.o: Montecarlo.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_tumor2d_CXXFLAGS) $(CXXFLAGS) -MT nix_tumor2d-Montecarlo.o -MD -MP -MF $(DEPDIR)/nix_tumor2d-Montecarlo.Tpo -c -o nix_tumor2d-Montecarlo.o `test -f 'Montecarlo.cpp' || echo '$(srcdir)/'`Montecarlo.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/nix_tumor2d-Montecarlo.Tpo $(DEPDIR)/nix_tumor2d-Montecarlo.Po
@@ -1355,6 +1403,20 @@ nix_tumor3d-main.obj: main.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='main.cpp' object='nix_tumor3d-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_tumor3d_CXXFLAGS) $(CXXFLAGS) -c -o nix_tumor3d-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
+
+nix_tumor3d-AsciiIO.o: AsciiIO.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_tumor3d_CXXFLAGS) $(CXXFLAGS) -MT nix_tumor3d-AsciiIO.o -MD -MP -MF $(DEPDIR)/nix_tumor3d-AsciiIO.Tpo -c -o nix_tumor3d-AsciiIO.o `test -f 'AsciiIO.cpp' || echo '$(srcdir)/'`AsciiIO.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/nix_tumor3d-AsciiIO.Tpo $(DEPDIR)/nix_tumor3d-AsciiIO.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='AsciiIO.cpp' object='nix_tumor3d-AsciiIO.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_tumor3d_CXXFLAGS) $(CXXFLAGS) -c -o nix_tumor3d-AsciiIO.o `test -f 'AsciiIO.cpp' || echo '$(srcdir)/'`AsciiIO.cpp
+
+nix_tumor3d-AsciiIO.obj: AsciiIO.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_tumor3d_CXXFLAGS) $(CXXFLAGS) -MT nix_tumor3d-AsciiIO.obj -MD -MP -MF $(DEPDIR)/nix_tumor3d-AsciiIO.Tpo -c -o nix_tumor3d-AsciiIO.obj `if test -f 'AsciiIO.cpp'; then $(CYGPATH_W) 'AsciiIO.cpp'; else $(CYGPATH_W) '$(srcdir)/AsciiIO.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/nix_tumor3d-AsciiIO.Tpo $(DEPDIR)/nix_tumor3d-AsciiIO.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='AsciiIO.cpp' object='nix_tumor3d-AsciiIO.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_tumor3d_CXXFLAGS) $(CXXFLAGS) -c -o nix_tumor3d-AsciiIO.obj `if test -f 'AsciiIO.cpp'; then $(CYGPATH_W) 'AsciiIO.cpp'; else $(CYGPATH_W) '$(srcdir)/AsciiIO.cpp'; fi`
 
 nix_tumor3d-Montecarlo.o: Montecarlo.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_tumor3d_CXXFLAGS) $(CXXFLAGS) -MT nix_tumor3d-Montecarlo.o -MD -MP -MF $(DEPDIR)/nix_tumor3d-Montecarlo.Tpo -c -o nix_tumor3d-Montecarlo.o `test -f 'Montecarlo.cpp' || echo '$(srcdir)/'`Montecarlo.cpp

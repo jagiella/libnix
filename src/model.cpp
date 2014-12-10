@@ -35,8 +35,8 @@ enum StatType{ Proliferation, ECM, TUNEL};
 #define dmax(a,b) (a>b?a:b)
 #define NO_FILE_OUTPUT
 
-
-
+#include <float.h>
+double EpsilonLimit = DBL_MAX;
 
 
 class Cell;
@@ -372,6 +372,10 @@ double* model( int parc, double *parv, double *epsilon_limit, double *data_m, do
 {
 	//fprintf(stderr, "[START SIM]\n");
 	double epsilon = 0;
+	if(epsilon_limit){
+		//fprintf(stderr, "[EpsilonLimit = %e]\n", EpsilonLimit);
+		*epsilon_limit = pow( 10., EpsilonLimit);
+	}
 
 	// PARAMETERS
 	// initial condition

@@ -65,7 +65,7 @@ extern int Case;
 
 
 #ifndef __WithGUI__
-	int montecarlo( int argc, char **argv);
+	double montecarlo( int argc, char **argv);
 #else
 	#include <gui/window.h>
 	int montecarlo( int argc, char **argv, Window *gui);

@@ -129,17 +129,19 @@ double externalfuncPipe(int n, const double *x, double *grad, void *my_func_data
 	//return RAND01;
 }
 
+extern double EpsilonLimit;
+
 double externalfuncFile(int n, const double *x, double *grad, void *my_func_data){
 	char command[1024];
 	char rnd_filename[1024];
 
 	sprintf( rnd_filename, "tmp_%i_%i.out", rand(), omp_get_thread_num());
 
-	sprintf( command, "%s", (const char *)my_func_data); // executable
+	sprintf( command, "%s -e%e ", (const char *)my_func_data, EpsilonLimit); // executable
 	for( int i=0; i<n; i++)
 		sprintf( command, "%s %20e", command, x[i]);
 	sprintf( command, "%s > %s", command, rnd_filename);
-
+	//fprintf(stderr, "%s\n", command);
 	system( command);
 
 	FILE *lsofFile_p = fopen( rnd_filename, "r");

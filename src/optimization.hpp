@@ -24,6 +24,7 @@ typedef struct {
 	int    MaxFunEvalsAvg;
 	char   ParameterScaling;
 	int    PopulationSize;
+	bool   AllowInterception;
 	char   OutputFile[512];
 } optimoptions;
 

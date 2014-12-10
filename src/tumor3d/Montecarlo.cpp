@@ -33,6 +33,8 @@
 #include "DiffusionReactionEquation.hpp"
 
 #include "../matrix.hpp"
+#include "../statistics.hpp"
+#include "AsciiIO.h"
 
 #define MAX_CELLS 200000
 //#define TEST_STATIC_PROFIL
@@ -1527,7 +1529,7 @@ double InitialOxygenConcentration = 1.;
 double InitialGlucoseConcentration = 1.;
 
 #ifndef __WithGUI__
-int montecarlo(int argc, char **argv)
+double montecarlo(int argc, char **argv)
 #else
 #include <gui/window.h>
 		int montecarlo( int argc, char **argv, Window *gui)
@@ -1744,14 +1746,52 @@ int montecarlo(int argc, char **argv)
 	double InitialRadius = 1;
 	double InitialQuiescentFraction = 0.;
 
+	// DATA
+	comparison_t data_growthcurve = create_comparison();
+	comparison_t data_KI67 = create_comparison();
+	//comparison_t sim_growthcurve = create_comparison();
+	//sim_growthcurve.x = (double*) malloc( sizeof(double) * 1000);
+	//sim_growthcurve.m = (double*) malloc( sizeof(double) * 1000);
+	double maxEpsilon = DBL_MAX;
+	double cumEpsilon = 0;
+	int    idxEpsilon = 0;
+	{FILE *fp_raw = fopen( "raw_gc.dat", "w"); fprintf(fp_raw, ""); fclose(fp_raw); }
+	//{FILE *fp_raw = fopen( "raw_ki67.dat", "w"); fprintf(fp_raw, ""); fclose(fp_raw); }
+
+
 	// PARSING COMMAND LINE ARGUEMENTS
 	while ((c =
 			getopt(
 					argc,
 					argv,
-					"R:a:b:c:d:e:f:g:i:jo:l:n:M:m:p:s:v:F:t:k:x:y:r:w:z:Z:D:A:NE:B:I:J:K:C:L:S:M:G:O:V:P:Y:W:h"))
+					"1:2:3:R:a:b:c:d:e:f:g:i:jo:l:n:M:m:p:s:v:F:t:k:x:y:r:w:z:Z:D:A:NE:B:I:J:K:C:L:S:M:G:O:V:P:Y:W:h"))
 			!= EOF) {
 		switch (c) {
+
+		case '1': {
+			// Read Growth Curve Data
+			   //fprintf( stderr, "Read data from %s\n", optarg) ;
+			data_growthcurve.dim = readFileColumn( optarg, data_growthcurve.x, 0);
+			                       readFileColumn( optarg, data_growthcurve.m, 1);
+			                       readFileColumn( optarg, data_growthcurve.s, 2);
+		   for( int j=0; j<data_growthcurve.dim; j++)
+			   data_growthcurve.x[j] *= 24.;
+
+		} break;
+
+		case '2': {
+			// Read Proliferation Profile Data
+			   //fprintf( stderr, "Read data from %s\n", optarg) ;
+			   data_KI67.dim = readFileColumn( optarg, data_KI67.x, 0);
+			   				   readFileColumn( optarg, data_KI67.m, 3);
+			   				   readFileColumn( optarg, data_KI67.s, 11);
+
+		} break;
+
+		case '3': {
+			maxEpsilon = atof( optarg);
+			//fprintf( stderr, "Pass epsilon limit %e\n", maxEpsilon) ;
+		} break;
 
 		case 'R': {
 
@@ -1874,6 +1914,7 @@ int montecarlo(int argc, char **argv)
 		case 'd':
 			strncpy(dirname, optarg, FILENAMESIZE);
 			CustomDirectoryName = TRUE;
+			//fprintf( stderr, "Create dir %s\n", optarg) ;
 			break;
 		case 'c':
 			NumberOfCellsPerSite = atoi(optarg);
@@ -1937,9 +1978,9 @@ int montecarlo(int argc, char **argv)
 		case 'r':
 			resolution = atoi(optarg);
 			break;
-		case 'A':
-			OutputAnimation = atoi(optarg);
-			break;
+		//case 'A':
+		//	OutputAnimation = atoi(optarg);
+		//	break;
 		case 'D':
 			customDiffusionCoefficientFactor = atof(optarg);
 			Oxygen_Diffusion *= customDiffusionCoefficientFactor;
@@ -2016,6 +2057,13 @@ int montecarlo(int argc, char **argv)
 	Oxygen_Diffusion /= pow((double) CountCellsPerVoronoiCell, 2. / DIMENSIONS);
 	Glucose_Diffusion /= pow((double) CountCellsPerVoronoiCell, 2. / DIMENSIONS);
 
+
+	// READ DATA
+
+
+
+
+
 	// FILE AND DIRECTORY NAMES
 
 	if (!CustomDirectoryName) {
@@ -2027,9 +2075,11 @@ int montecarlo(int argc, char **argv)
 #endif
 	}
 
-	mkdir(dirname MODUS);
-	//if (mkdir(dirname MODUS))
-	//	fprintf(stderr, "WARNING: Error creating directory %s. Exiting\n", dirname);
+	//mkdir(dirname MODUS);
+	if (mkdir(dirname MODUS))
+		fprintf(stderr, "WARNING: Error creating directory %s. Exiting\n", dirname);
+	//else
+	//	fprintf(stderr, "INFO: Created directory %s\n", dirname);
 
 	// INITIALIZE VORONOI GRID
 
@@ -5245,7 +5295,29 @@ int montecarlo(int argc, char **argv)
 
 				//***if( ceil(Last_Time/24.) != ceil(Time/24.))
 				for( int day=(int)ceil(Last_Time/24.); day < (int)ceil(Time/24.); day++ )
+				if(	inbound<double>( RadialProfilesTime, day-1, day-1, 1 ))
 				{
+					// data_KI67
+					if(true){
+						comparison_t sim_KI67 = create_comparison();
+						sim_KI67.dim = (int) ceil( max( data_KI67.x, data_KI67.dim) );
+						sim_KI67.x = (double*) malloc( sizeof(double) * sim_KI67.dim);
+						sim_KI67.m = (double*) malloc( sizeof(double) * sim_KI67.dim);
+						FILE *fp_raw = fopen( "raw_ki67.dat", "w");
+						for( int j=0; j<sim_KI67.dim; j++){
+							sim_KI67.x[j] = j;
+							sim_KI67.m[j] = ( histogram[j] - histogramFree[j]>0 ? (double) histogramDividing[j] / (double) (histogram[j] - histogramFree[j]) : 0);
+							fprintf( fp_raw, "%e %e %e %e\n", data_KI67.x[j], sim_KI67.m[j], data_KI67.m[j], data_KI67.s[j]);
+						}
+						fclose(fp_raw);
+						cumEpsilon += compare( data_KI67, sim_KI67, mean_vs_mean);
+						//fprintf(stderr, "<< %e >>\n", cumEpsilon);
+
+						if( cumEpsilon > maxEpsilon)
+							return cumEpsilon;
+					}
+
+
 					// WRITE TO FILE
 					//fprintf(stderr, "[Print Cells to Povray File]\n");
 					//***sprintf(outfilename, "%s/rel%i.radialProfiles_day%i-%i.pov", dirname, k, (int)floor(Last_Time/24.), (int)ceil(Last_Time/24.));
@@ -5297,6 +5369,20 @@ int montecarlo(int argc, char **argv)
 			// actual timestep
 			if (indexOfTime( Last_Time, BeginningTime, OutputRate)
 					< indexOfTime( Time, BeginningTime, OutputRate)) {
+
+				{
+					// passed data points
+					for( ; data_growthcurve.x[idxEpsilon] < Time && idxEpsilon<data_growthcurve.dim; idxEpsilon++){
+						double radius = ( isnan(gyrRadius) ? sqrt(DIMENSIONS*50*50) : sqrt(gyrRadius) ) * AGENT_DIAMETER * 0.8;
+						cumEpsilon += 0.5 * pow( (data_growthcurve.m[idxEpsilon] - radius)/data_growthcurve.s[idxEpsilon], 2);
+						//fprintf(stderr, "[[ %e ]]\n", cumEpsilon);
+						FILE *fp_raw = fopen( "raw_gc.dat", "a+");
+						fprintf( fp_raw, "%e %e %e %e\n", data_growthcurve.x[idxEpsilon], radius, data_growthcurve.m[idxEpsilon], data_growthcurve.s[idxEpsilon]);
+						fclose(fp_raw);
+						if( cumEpsilon > maxEpsilon)
+							return cumEpsilon;
+					}
+				}
 
 				{
 					int l;
@@ -5380,6 +5466,13 @@ int montecarlo(int argc, char **argv)
 					 */
 
 #if ON_THE_FLY_OUTPUT
+
+
+					/*{
+						sim_growthcurve.x[l] = timeOfIndex ( l, BeginningTime, OutputRate);
+						sim_growthcurve.m[l] = global_gyrRadius[l] / (k + 1.) * AGENT_DIAMETER * 0.8;
+						sim_growthcurve.dim = l+1;
+					}*/
 
 
 					sprintf(outfilename, "%s/dataOnTheFly.dat", dirname);
@@ -5636,6 +5729,29 @@ int montecarlo(int argc, char **argv)
 				 sprintf(outfilename, "%s/cells%i.pov", dirname, l);
 				 agentArray->printToPovray( outfilename, voronoiDiagram);
 				 }*/
+				/*{
+					sim_growthcurve.x[l] = timeOfIndex ( l, BeginningTime, OutputRate);
+					sim_growthcurve.m[l] = global_gyrRadius[l] / (k + 1.) * AGENT_DIAMETER * 0.8;
+					sim_growthcurve.dim = l+1;
+
+					double x_min = sim_growthcurve.x[0];
+					double x_max = sim_growthcurve.x[l];
+
+					int new_dim=0;
+					for( ; new_dim<data_growthcurve.dim && data_growthcurve.x[new_dim] <= x_max; new_dim++) ;
+					int old_dim = data_growthcurve.dim;
+					data_growthcurve.dim = new_dim;
+
+					// evaluate Epsilon
+					if(l+1 > 5){
+						//fprintf( stderr, "[ Do it: %i ]\n", sim_growthcurve.dim);
+						//printVector( sim_growthcurve.m, sim_growthcurve.dim, "%.3e ");
+						double negLogLik = compare( data_growthcurve, sim_growthcurve, mean_vs_mean);
+						fprintf( stderr, "[ %i, %i, Epsilon = %e ]\n", data_growthcurve.dim, sim_growthcurve.dim, negLogLik);
+					}
+					data_growthcurve.dim = old_dim;
+
+				}*/
 
 				sprintf(outfilename, "%s/dataOnTheFly.dat", dirname);
 				if ((fp = fopen(outfilename, "a+")) == NULL) {
@@ -6078,7 +6194,7 @@ int montecarlo(int argc, char **argv)
 
 	// FREE MEMORY
 	//exit(0);
-	return 0;
+	return cumEpsilon;
 
 #if MONOD_KINETICS
 #ifdef __WithoutGUI__

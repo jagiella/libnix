@@ -27,6 +27,7 @@ typedef struct {
 	float atp_min;
 } model_input;
 
+extern double EpsilonLimit;
 double* model( int parc, double *parv, double *epsilon=0, double *data_m=0, double *data_s=0);
 double compare( int parc, double *parv1, double *parv2, int n1, int n2, double *epsilon=0);
 
