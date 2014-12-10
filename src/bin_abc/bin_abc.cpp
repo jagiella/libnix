@@ -76,7 +76,7 @@ int main( int argc, char **argv){
 
 
 	char c;
-	while ((c = getopt (argc, argv, "m:l:u:n:o:a:LGI")) != -1)
+	while ((c = getopt (argc, argv, "m:l:u:n:o:a:LGIv")) != -1)
 	switch (c){
 	      case 'm': { // function to minimize
 	  		if( strcmp( optarg, "tumor") == 0){
@@ -131,6 +131,7 @@ int main( int argc, char **argv){
 	      case 'L': options.ParameterScaling = Logarithmic; break;
 	      case 'G': GP_Approximation = true; break;
 	      case 'I': options.AllowInterception = true; break;
+	      case 'v': options.Display = true; break;
 	}
 
 

@@ -633,11 +633,13 @@ void abc(
 		while( n_new<options->PopulationSize){
 
 			// >>> SEQUENTIAL PART <<<
-
+			if( options->Display)
+				fprintf( stderr, "SAMPLING\n");
 			for( int ip=0; ip<nparallel; ip++){
 
 				t = clock();
-				//fprintf( stderr, "SAMPLING %i\n", omp_get_thread_num());
+				//if( options->Display)
+				//	fprintf( stderr, "SAMPLING %i\n", omp_get_thread_num());
 				if( it == 0){
 					// UNIFORM SAMPLING
 					for( int j=0; j<d; j++)
@@ -660,6 +662,9 @@ void abc(
 			}
 
 			// >>> PARALLEL PART <<<
+
+			if( options->Display)
+				fprintf( stderr, "EVALUATION\n");
 
 	#ifdef USE_OMP
 	#pragma omp parallel for
@@ -700,6 +705,9 @@ void abc(
 
 
 			// >>> SEQUENTIAL PART <<<
+			if( options->Display)
+				fprintf( stderr, "STORE ACCEPTED\n");
+
 			for( int ip=0; ip<nparallel; ip++){
 				//fprintf( stderr, "%i = %5e \n", ip, f_par[ip]);
 				//fprintf( stderr, "%s\n", (w_par[ip] ? "accepted":"refused"));
@@ -789,6 +797,9 @@ void abc(
 		}
 		//if( /*count_evals >= 10 &&*/ (double)n_new/count_evals_per_iteration[it] < 0.25)
 		//	quantile_value *= 1.1;
+
+		if( options->Display)
+			fprintf( stderr, "PREPARE NEXT ITERATION\n");
 
 		normalizeVector( w_new, n_new);
 //		EpsilonLimit = DBL_MAX;

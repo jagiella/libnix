@@ -30,6 +30,8 @@ AC_CHECK_LIB([gsl], [main])
 # FIXME: Replace `main' with a function in `-lgslcblas':
 AC_CHECK_LIB([gslcblas], [main])
 
+AC_CHECK_LIB([gslcblas], [main])
+
 AC_CHECK_LIB([SDL2], [main], [HAS_LIBSDL2=1])
 AM_CONDITIONAL([USE_LIBSDL2], [test "$HAS_LIBSDL2" -eq 1])
 
