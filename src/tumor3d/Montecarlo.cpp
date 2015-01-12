@@ -1752,6 +1752,7 @@ double montecarlo(int argc, char **argv)
 	//comparison_t sim_growthcurve = create_comparison();
 	//sim_growthcurve.x = (double*) malloc( sizeof(double) * 1000);
 	//sim_growthcurve.m = (double*) malloc( sizeof(double) * 1000);
+	double maxRadius  = 0;
 	double maxEpsilon = DBL_MAX;
 	double cumEpsilon = 0;
 	int    idxEpsilon = 0;
@@ -1774,8 +1775,11 @@ double montecarlo(int argc, char **argv)
 			data_growthcurve.dim = readFileColumn( optarg, data_growthcurve.x, 0);
 			                       readFileColumn( optarg, data_growthcurve.m, 1);
 			                       readFileColumn( optarg, data_growthcurve.s, 2);
-		   for( int j=0; j<data_growthcurve.dim; j++)
+		   for( int j=0; j<data_growthcurve.dim; j++){
 			   data_growthcurve.x[j] *= 24.;
+			   maxRadius = max<double>( maxRadius, data_growthcurve.m[j] + data_growthcurve.s[j]);
+		   }
+		   //fprintf(stderr, "(( max radius = %e ))\n", maxRadius);
 
 		} break;
 
@@ -3196,6 +3200,7 @@ double montecarlo(int argc, char **argv)
 		 count_cell_volume++;
 		 */
 
+		fprintf(stderr, "Init cells\n");
 		switch( 0){
 		case 0:{
 			// START WITH BALL OF CELLS
@@ -3214,6 +3219,8 @@ double montecarlo(int argc, char **argv)
 					if( CountCellsPerVoronoiCell == 1){
 						GetAgent( voronoiDiagram->voronoiCells[v])->state = ACTIVE; //COMPARTMENT;
 						update_surrounding_added_cell(actionList, voronoiDiagram->voronoiCells[v], voronoiDiagram);
+						//initCellActions( GetAgent( voronoiDiagram->voronoiCells[v]));
+						//GetAgent( voronoiDiagram->voronoiCells[v])->actualize( actionList);
 					}else{
 						GetAgent( voronoiDiagram->voronoiCells[v])->state = COMPARTMENT;
 						GetAgent( voronoiDiagram->voronoiCells[v])->maxCellCount = CountCellsPerVoronoiCell;
@@ -3264,6 +3271,8 @@ double montecarlo(int argc, char **argv)
 			agentArray->agents[a]->divide = //1;
 					(myRand() < (1.-InitialQuiescentFraction) * PROB_REENTERING_CELL_CYCLE( SPATIAL_UNIT * GetDistanceToClosestFreeNeighbor( voronoiDiagram, agentArray->agents[a]->location[0])) ? 1: 0);
 		}
+
+		fprintf(stderr, "...finished\n");
 
 		/*for(int a=0; a<agentArray->countActiveAgents; a++){
 		 double dist = agentArray->agents[a]->location[0]->getDistanceTo( voronoiDiagram->searchClosestFreeVoronoiCell( agentArray->agents[a]->location[0], VoronoiCell::extendedNeighborDepth, VoronoiCell::symbolicExtendedNeighborhoodSize, VoronoiCell::symbolicExtendedNeighborhood));
@@ -5298,7 +5307,7 @@ double montecarlo(int argc, char **argv)
 				if(	inbound<double>( RadialProfilesTime, day-1, day-1, 1 ))
 				{
 					// data_KI67
-					if(true){
+					if(true && data_KI67.dim){
 						comparison_t sim_KI67 = create_comparison();
 						sim_KI67.dim = (int) ceil( max( data_KI67.x, data_KI67.dim) );
 						sim_KI67.x = (double*) malloc( sizeof(double) * sim_KI67.dim);
@@ -5310,7 +5319,8 @@ double montecarlo(int argc, char **argv)
 							fprintf( fp_raw, "%e %e %e %e\n", data_KI67.x[j], sim_KI67.m[j], data_KI67.m[j], data_KI67.s[j]);
 						}
 						fclose(fp_raw);
-						cumEpsilon += compare( data_KI67, sim_KI67, mean_vs_mean);
+
+						cumEpsilon += compare( data_KI67, sim_KI67, mean_vs_mean) / data_KI67.dim;
 						//fprintf(stderr, "<< %e >>\n", cumEpsilon);
 
 						if( cumEpsilon > maxEpsilon)
@@ -5370,15 +5380,18 @@ double montecarlo(int argc, char **argv)
 			if (indexOfTime( Last_Time, BeginningTime, OutputRate)
 					< indexOfTime( Time, BeginningTime, OutputRate)) {
 
-				{
+				if(data_growthcurve.dim){
 					// passed data points
 					for( ; data_growthcurve.x[idxEpsilon] < Time && idxEpsilon<data_growthcurve.dim; idxEpsilon++){
 						double radius = ( isnan(gyrRadius) ? sqrt(DIMENSIONS*50*50) : sqrt(gyrRadius) ) * AGENT_DIAMETER * 0.8;
-						cumEpsilon += 0.5 * pow( (data_growthcurve.m[idxEpsilon] - radius)/data_growthcurve.s[idxEpsilon], 2);
+
+						cumEpsilon += 0.5 * pow( (data_growthcurve.m[idxEpsilon] - radius)/data_growthcurve.s[idxEpsilon], 2)  / data_growthcurve.dim;
 						//fprintf(stderr, "[[ %e ]]\n", cumEpsilon);
+
 						FILE *fp_raw = fopen( "raw_gc.dat", "a+");
 						fprintf( fp_raw, "%e %e %e %e\n", data_growthcurve.x[idxEpsilon], radius, data_growthcurve.m[idxEpsilon], data_growthcurve.s[idxEpsilon]);
 						fclose(fp_raw);
+
 						if( cumEpsilon > maxEpsilon)
 							return cumEpsilon;
 					}
@@ -5571,6 +5584,11 @@ double montecarlo(int argc, char **argv)
 
 				//gyrRadius = getGyrationRadius(agentArray);
 				gyrRadius = getGyrationRadiusOfBorder(agentArray);
+				if( data_growthcurve.dim && maxRadius < ( isnan(gyrRadius) ? sqrt(DIMENSIONS)*50 : sqrt(gyrRadius) ) * AGENT_DIAMETER * 0.8){
+					//fprintf(stderr, "(( max radius exeeded ))\n");
+					//return cumEpsilon + maxEpsilon;
+					return maxEpsilon;
+				}
 				global_gyrRadius[l] += sqrt(gyrRadius);
 
 				global_gyrRadiusSquare[l] += gyrRadius;

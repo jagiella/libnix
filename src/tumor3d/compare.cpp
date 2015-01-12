@@ -52,7 +52,7 @@ int main( int argc, char **argv)
 	fprintf(stderr, "(( %i ))\n", optind);*/
 
 	// READ DATA
-
+	FILE *fp;
 	char data_filename_gc[1024];
 	sprintf( data_filename_gc, "/Users/jagiella/Dropbox/Work/PUBLICATIONS/Paper-wp2-lungsys/data/SK-MES-1/SK-MES_Radius_O0.28_G25.dat");
 /*	comparison_t data_growthcurve = create_comparison();
@@ -84,15 +84,21 @@ int main( int argc, char **argv)
 	addOption( parc, parv, "-RNoRadialProfiles");
 	addOption( parc, parv, "-RRadialProfilesTime17");
 	addOption( parc, parv, "-RNoSliceOutput");
-	addOption( parc, parv, "-k20");
+	addOption( parc, parv, "-k10");
 	addOption( parc, parv, "-RExponentialReentranceProbability");
 	addOption( parc, parv, "-M10");
 	sprintf( option, "-d%s", simdir);
 	addOption( parc, parv, option);
-	sprintf( option, "-1%s", data_filename_gc);
-	addOption( parc, parv, option);
-	sprintf( option, "-2%s", data_filename_ki67);
-	addOption( parc, parv, option);
+	/*if (fp = fopen(data_filename_gc, "r")){
+		fclose(fp);
+		sprintf( option, "-1%s", data_filename_gc);
+		addOption( parc, parv, option);
+	}
+	if (fp = fopen(data_filename_ki67, "r")){
+		fclose(fp);
+		sprintf( option, "-2%s", data_filename_ki67);
+		addOption( parc, parv, option);
+	}*/
 	/*if( maxEpsilon != DBL_MAX){
 	sprintf( option, "-3%e", maxEpsilon);
 	addOption( parc, parv, option);
@@ -104,10 +110,14 @@ int main( int argc, char **argv)
 	int par_count=0;
 	for( int i=1; i<argc; i++){
 		if( argv[i][0] == '-' && argv[i][1] == 'e'){
-			//fprintf( stderr, "< %e >\n", atof( &argv[i][2]));
 			sprintf( option, "-3%e", atof( &argv[i][2]));
 			addOption( parc, parv, option);
-			//writeRawDataToFile = true;
+		}else if( argv[i][0] == '-' && argv[i][1] == 'g'){
+			sprintf( option, "-1%s", &argv[i][2]);
+			addOption( parc, parv, option);
+		}else if( argv[i][0] == '-' && argv[i][1] == 'k'){
+			sprintf( option, "-2%s", &argv[i][2]);
+			addOption( parc, parv, option);
 		}else{
 			switch(par_count){
 			case 0: sprintf( option, "-v%s", argv[i]); break;

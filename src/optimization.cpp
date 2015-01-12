@@ -16,6 +16,8 @@
 #include "optimization.hpp"
 #include "gp.hpp"
 
+#define USE_OMP
+
 extern double EpsilonLimit;
 
 optimoptions getoptions(){

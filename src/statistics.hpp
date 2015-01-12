@@ -45,7 +45,13 @@ void findmin( double *x, int n, double &o_min, int &o_idx);
 void findmax( double *x, int n, double &max, int &idx);
 double  min( double  *x, int n);
 void    min( double *x, int n, double &xmin, int &imin);
-int min( int x1, int x2);
+template <class T>
+T min( T x1, T x2){
+	if( x1 < x2)
+		return x1;
+	else
+		return x2;
+}
 double  max( double  *x, int n);
 double quantile( double *x, int n, double f);
 

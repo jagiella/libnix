@@ -96,11 +96,11 @@ int main( int argc, char **argv){
 	  		}else{
 	  			fprintf( stderr, "Use user-provided command [ %s ]\n", optarg);
 	  			func_data = optarg;
-/*	  #if __linux
+	  #if __linux
 	  			func = externalfuncPipe;
-	  #else*/
+	  #else
 	  			func = externalfuncFile;
-	  //#endif
+	  #endif
 	  		}
 	      }break;
 
