@@ -3200,7 +3200,7 @@ double montecarlo(int argc, char **argv)
 		 count_cell_volume++;
 		 */
 
-		fprintf(stderr, "Init cells\n");
+		//fprintf(stderr, "Init cells\n");
 		switch( 0){
 		case 0:{
 			// START WITH BALL OF CELLS
@@ -3272,7 +3272,7 @@ double montecarlo(int argc, char **argv)
 					(myRand() < (1.-InitialQuiescentFraction) * PROB_REENTERING_CELL_CYCLE( SPATIAL_UNIT * GetDistanceToClosestFreeNeighbor( voronoiDiagram, agentArray->agents[a]->location[0])) ? 1: 0);
 		}
 
-		fprintf(stderr, "...finished\n");
+		//fprintf(stderr, "...finished\n");
 
 		/*for(int a=0; a<agentArray->countActiveAgents; a++){
 		 double dist = agentArray->agents[a]->location[0]->getDistanceTo( voronoiDiagram->searchClosestFreeVoronoiCell( agentArray->agents[a]->location[0], VoronoiCell::extendedNeighborDepth, VoronoiCell::symbolicExtendedNeighborhoodSize, VoronoiCell::symbolicExtendedNeighborhood));
