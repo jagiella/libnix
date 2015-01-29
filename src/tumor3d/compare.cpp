@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h> // strcpy
+#include <sys/utsname.h> // uname
 
 #include "AsciiIO.h"
 #include "Montecarlo.h"
@@ -76,7 +77,11 @@ int main( int argc, char **argv)
 	char **parv = 0;
 	char simdir[512];
 	pid_t pid = getpid();
-	sprintf( simdir, "TEST%i", pid); //fprintf( stderr, "[OUTPUTDIR: %s]\n", simdir);
+	struct utsname unameData;
+	uname(&unameData); // Might check return value here (non-0 = failure)
+	//printf("%s", unameData.nodename);
+
+	sprintf( simdir, "%s_PID%i", unameData.nodename, pid); //fprintf( stderr, "[OUTPUTDIR: %s]\n", simdir);
 	char option[512];
 	addOption( parc, parv, "nix-tumor3d");
 	addOption( parc, parv, "-x1");
