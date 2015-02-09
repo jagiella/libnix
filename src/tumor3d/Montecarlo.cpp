@@ -2080,8 +2080,8 @@ double montecarlo(int argc, char **argv)
 	}
 
 	//mkdir(dirname MODUS);
-	if (mkdir(dirname MODUS))
-		fprintf(stderr, "WARNING: Error creating directory %s. Exiting\n", dirname);
+	//if (mkdir(dirname MODUS))
+	//	fprintf(stderr, "WARNING: Error creating directory %s. Exiting\n", dirname);
 	//else
 	//	fprintf(stderr, "INFO: Created directory %s\n", dirname);
 
