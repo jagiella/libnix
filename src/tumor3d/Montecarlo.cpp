@@ -113,7 +113,7 @@ typedef struct _Statisticx {
 } Statistix;
 
 
-void updateHistogram( AgentList *agentArray, int* histogram, int* histogramDividing, int* histogramNecrotic, int* histogramFree, double* histogramECM)
+void updateHistogram( AgentList *agentArray, VoronoiDiagram *vd, int* histogram, int* histogramDividing, int* histogramNecrotic, int* histogramFree, double* histogramECM)
 {
 	//fprintf(stderr, "[Print Cells to Povray File]\n");
 	//Time = EndTime;
@@ -132,7 +132,10 @@ void updateHistogram( AgentList *agentArray, int* histogram, int* histogramDivid
 		for (int l = 0; countBorderCells!=maxBorderCells && l < agentArray->agents[a]->countLocations; l++){
 			//bool unoccupiedNeighbor = false;
 			for( int n=0; countBorderCells!=maxBorderCells && n<agentArray->agents[a]->location[l]->countNeighborCells /*&& !unoccupiedNeighbor*/; n++)
-				if( !agentArray->agents[a]->location[l]->neighborCells[n]->agent || agentArray->agents[a]->location[l]->neighborCells[n]->index < 0){
+				if( !agentArray->agents[a]->location[l]->neighborCells[n]->agent
+						|| agentArray->agents[a]->location[l]->neighborCells[n]->index < 0
+						|| agentArray->agents[a]->location[l]->isDomainBorder(vd)){
+
 					//unoccupiedNeighbor=true;
 					//if( countBorderCells==100000)
 					//	exit(0);
@@ -941,7 +944,7 @@ double getGyrationRadius(AgentList *agentList) {
 	return gyrRadius;
 }
 
-double getGyrationRadiusOfBorder(AgentList *agentList) {
+double getGyrationRadiusOfBorder(AgentList *agentList, VoronoiDiagram *vd) {
 	/*int max_queueSize = agentList->countActiveAgents*MAX_SUBCELLULAR_COMPONENTS;
 	 int queueSize = 0;
 	 VoronoiCell **queue = (VoronoiCell**) calloc( max_queueSize, sizeof(VoronoiCell*));
@@ -1016,37 +1019,40 @@ double getGyrationRadiusOfBorder(AgentList *agentList) {
 	 */
 
 	// collect border points
-	int max_borderSize = agentList->countActiveAgents
-			* MAX_SUBCELLULAR_COMPONENTS;
+	int max_borderSize = agentList->countActiveAgents * MAX_SUBCELLULAR_COMPONENTS;
 	int borderSize = 0;
 	//VoronoiCell *border[max_borderSize];
-	VoronoiCell **border = (VoronoiCell**) malloc(
-			sizeof(VoronoiCell*) * max_borderSize);
+	VoronoiCell **border = (VoronoiCell**) malloc(sizeof(VoronoiCell*) * max_borderSize);
+	//fprintf(stderr, "Call\n");
 	for (int i = 0; i < agentList->countActiveAgents; i++) {
 		//	fprintf( stderr, "agent: %i\n", agentList->agents[i]->index);
 		if (agentList->agents[i]->state != VESSEL)
 			for (int ii = 0; ii < agentList->agents[i]->countLocations; ii++) {
 				//		fprintf( stderr, "-->location: %i\n", agentList->agents[i]->location[ii]->index);
+
 				char foundEmptyNeighbor = FALSE;
-				for (int iii = 0;
-						!foundEmptyNeighbor
-								&& iii
-										< agentList->agents[i]->location[ii]->countNeighborCells;
-						iii++) {
+				// check for border
+				if( agentList->agents[i]->location[ii]->isDomainBorder(vd)){
+					if (borderSize == max_borderSize) {
+						max_borderSize += agentList->countActiveAgents;
+						border = (VoronoiCell**) realloc( border, max_borderSize * sizeof(VoronoiCell *));
+					}
+					//fprintf(stderr, "Found\n");
+					border[borderSize++] = agentList->agents[i]->location[ii];
+
+					foundEmptyNeighbor = TRUE;
+				}
+
+				// check for empty neighbors
+				for (int iii = 0; !foundEmptyNeighbor && iii < agentList->agents[i]->location[ii]->countNeighborCells; iii++) {
 					//			fprintf( stderr, "---->neighbor: %i\n", agentList->agents[i]->location[ii]->neighborCells[iii]->index);
-					if (GetAgent( agentList->agents[i]->location[ii]->neighborCells[iii])
-							== NULL) {
+					if ( GetAgent( agentList->agents[i]->location[ii]->neighborCells[iii]) == NULL) {
 						if (borderSize == max_borderSize) {
 							max_borderSize += agentList->countActiveAgents;
-							border =
-									(VoronoiCell**) realloc(
-											border,
-											max_borderSize
-													* sizeof(VoronoiCell *));
+							border = (VoronoiCell**) realloc( border, max_borderSize * sizeof(VoronoiCell *));
 						}
 
-						border[borderSize++] =
-								agentList->agents[i]->location[ii];
+						border[borderSize++] = agentList->agents[i]->location[ii];
 						foundEmptyNeighbor = TRUE;
 						//				fprintf( stderr, "    >ADD TO QUEUE!\n");
 						if (agentList->agents[i]->location[ii] == NULL) {
@@ -1749,6 +1755,7 @@ double montecarlo(int argc, char **argv)
 	// DATA
 	comparison_t data_growthcurve = create_comparison();
 	comparison_t data_KI67 = create_comparison();
+	comparison_t data_ECM  = create_comparison();
 	//comparison_t sim_growthcurve = create_comparison();
 	//sim_growthcurve.x = (double*) malloc( sizeof(double) * 1000);
 	//sim_growthcurve.m = (double*) malloc( sizeof(double) * 1000);
@@ -1765,7 +1772,7 @@ double montecarlo(int argc, char **argv)
 			getopt(
 					argc,
 					argv,
-					"1:2:3:R:a:b:c:d:e:f:g:i:jo:l:n:M:m:p:s:v:F:t:k:x:y:r:w:z:Z:D:A:NE:B:I:J:K:C:L:S:M:G:O:V:P:Y:W:h"))
+					"1:2:3:4:R:a:b:c:d:e:f:g:i:jo:l:n:M:m:p:s:v:F:t:k:x:y:r:w:z:Z:D:A:NE:B:I:J:K:C:L:S:M:G:O:V:P:Y:W:h"))
 			!= EOF) {
 		switch (c) {
 
@@ -1777,7 +1784,7 @@ double montecarlo(int argc, char **argv)
 			                       readFileColumn( optarg, data_growthcurve.s, 2);
 		   for( int j=0; j<data_growthcurve.dim; j++){
 			   data_growthcurve.x[j] *= 24.;
-			   maxRadius = max<double>( maxRadius, data_growthcurve.m[j] + data_growthcurve.s[j]);
+			   maxRadius = max<double>( maxRadius, data_growthcurve.m[j] + data_growthcurve.s[j]*2);
 		   }
 		   //fprintf(stderr, "(( max radius = %e ))\n", maxRadius);
 
@@ -1787,8 +1794,17 @@ double montecarlo(int argc, char **argv)
 			// Read Proliferation Profile Data
 			   //fprintf( stderr, "Read data from %s\n", optarg) ;
 			   data_KI67.dim = readFileColumn( optarg, data_KI67.x, 0);
-			   				   readFileColumn( optarg, data_KI67.m, 3);
-			   				   readFileColumn( optarg, data_KI67.s, 11);
+			   				   readFileColumn( optarg, data_KI67.m, 1);
+			   				   readFileColumn( optarg, data_KI67.s, 2);
+
+		} break;
+
+		case '4': {
+			// Read Proliferation Profile Data
+			   //fprintf( stderr, "Read data from %s\n", optarg) ;
+			   data_ECM.dim = readFileColumn( optarg, data_ECM.x, 0);
+			   				  readFileColumn( optarg, data_ECM.m, 1);
+			   				  readFileColumn( optarg, data_ECM.s, 2);
 
 		} break;
 
@@ -2079,7 +2095,7 @@ double montecarlo(int argc, char **argv)
 #endif
 	}
 
-	//mkdir(dirname MODUS);
+	mkdir(dirname MODUS);
 	//if (mkdir(dirname MODUS))
 	//	fprintf(stderr, "WARNING: Error creating directory %s. Exiting\n", dirname);
 	//else
@@ -2169,7 +2185,7 @@ double montecarlo(int argc, char **argv)
 		}
 		//exit( 0);
 	}
-
+	voronoiDiagram->boundaryThickness = 1.;
 
 
 	// STATISTICS
@@ -3641,7 +3657,7 @@ double montecarlo(int argc, char **argv)
 		timer = time(NULL);
 		Last_Time = Time = 0.0;
 		//gyrRadius = getGyrationRadius(agentArray);
-		gyrRadius = getGyrationRadiusOfBorder(agentArray);
+		gyrRadius = getGyrationRadiusOfBorder(agentArray, voronoiDiagram);
 
 		l = (int) Time;
 		global_cells[l] += count_cells;
@@ -5297,7 +5313,7 @@ double montecarlo(int argc, char **argv)
 				// UPDATE
 				if( ceil(Last_Time/1) != ceil(Time/1)){
 					//***for( int hour=(int)ceil(Last_Time/1.); hour < (int)ceil(Time/1.); hour++ )
-					updateHistogram( agentArray, histogram, histogramDividing, histogramNecrotic, histogramFree, histogramECM);
+					updateHistogram( agentArray, voronoiDiagram,	histogram, histogramDividing, histogramNecrotic, histogramFree, histogramECM);
 					//fprintf(stderr, "[Updated History]\n");
 				}
 
@@ -5322,6 +5338,37 @@ double montecarlo(int argc, char **argv)
 
 						cumEpsilon += compare( data_KI67, sim_KI67, mean_vs_mean) / data_KI67.dim;
 						//fprintf(stderr, "<< %e >>\n", cumEpsilon);
+						if( isnan(cumEpsilon)){
+							fprintf(stderr, "{data_KI67}!\n"); exit(0);
+						}
+
+						if( cumEpsilon > maxEpsilon)
+							return cumEpsilon;
+					}
+
+					// data_ECM
+					if(true && data_ECM.dim){
+						comparison_t sim_ECM = create_comparison();
+						sim_ECM.dim = (int) ceil( max( data_ECM.x, data_ECM.dim) );
+						sim_ECM.x = (double*) malloc( sizeof(double) * data_ECM.dim);
+						sim_ECM.m = (double*) malloc( sizeof(double) * data_ECM.dim);
+						FILE *fp_raw = fopen( "raw_ecm.dat", "w");
+						for( int j=0; j<sim_ECM.dim; j++){
+							sim_ECM.x[j] = j;
+							if( histogram[j])
+								sim_ECM.m[j] = (double) histogramECM[j]	/ (double) histogram[j];
+							else
+								sim_ECM.m[j] = 0;
+							fprintf( fp_raw, "%e %e %e %e\n", data_ECM.x[j], sim_ECM.m[j], data_ECM.m[j], data_ECM.s[j]);
+						}
+						fclose(fp_raw);
+
+						cumEpsilon += compare( data_ECM, sim_ECM, mean_vs_mean) / data_ECM.dim;
+						//fprintf(stderr, "<< %e >>\n", cumEpsilon);
+
+						if( isnan(cumEpsilon)){
+							fprintf(stderr, "{data_ECM}!\n"); exit(0);
+						}
 
 						if( cumEpsilon > maxEpsilon)
 							return cumEpsilon;
@@ -5346,14 +5393,11 @@ double montecarlo(int argc, char **argv)
 									i,
 									histogram[i],
 									histogramDividing[i],
-									(double) histogramDividing[i]
-											/ (double) (histogram[i] - histogramFree[i]),
+									(double) histogramDividing[i] / (double) (histogram[i] - histogramFree[i]),
 									histogramNecrotic[i],
-									(double) histogramNecrotic[i]
-									        / (double) (histogram[i] - histogramFree[i]),
+									(double) histogramNecrotic[i] / (double) (histogram[i] - histogramFree[i]),
 									histogramECM[i],
-									(double) histogramECM[i]
-											/ (double) histogram[i],
+									( histogram[i] == 0 ? 0 : (double) histogramECM[i] / (double) histogram[i]),
 									PROB_REENTERING_CELL_CYCLE(i),
 									histogramFree[i]);
 							//fprintf(fs, "%i %i %i\n", i, histogram[i],histogramDividing[i]);
@@ -5391,6 +5435,10 @@ double montecarlo(int argc, char **argv)
 						FILE *fp_raw = fopen( "raw_gc.dat", "a+");
 						fprintf( fp_raw, "%e %e %e %e\n", data_growthcurve.x[idxEpsilon], radius, data_growthcurve.m[idxEpsilon], data_growthcurve.s[idxEpsilon]);
 						fclose(fp_raw);
+
+						if( isnan(cumEpsilon)){
+							fprintf(stderr, "{GC}!\n"); exit(0);
+						}
 
 						if( cumEpsilon > maxEpsilon)
 							return cumEpsilon;
@@ -5583,12 +5631,12 @@ double montecarlo(int argc, char **argv)
 				global_vessel_cells[l] += count_vessel_cells;
 
 				//gyrRadius = getGyrationRadius(agentArray);
-				gyrRadius = getGyrationRadiusOfBorder(agentArray);
-				if( data_growthcurve.dim && maxRadius < ( isnan(gyrRadius) ? sqrt(DIMENSIONS)*50 : sqrt(gyrRadius) ) * AGENT_DIAMETER * 0.8){
+				gyrRadius = getGyrationRadiusOfBorder(agentArray, voronoiDiagram);
+				/*if( data_growthcurve.dim && maxRadius < ( isnan(gyrRadius) ? sqrt(DIMENSIONS)*50 : sqrt(gyrRadius) ) * AGENT_DIAMETER * 0.8){
 					//fprintf(stderr, "(( max radius exeeded ))\n");
 					//return cumEpsilon + maxEpsilon;
 					return maxEpsilon;
-				}
+				}*/
 				global_gyrRadius[l] += sqrt(gyrRadius);
 
 				global_gyrRadiusSquare[l] += gyrRadius;
@@ -5627,7 +5675,7 @@ double montecarlo(int argc, char **argv)
 					agentArray->printToPovray(outfilename, voronoiDiagram);
 					//exit(0);
 
-					updateHistogram( agentArray, histogram, histogramDividing, histogramNecrotic, histogramFree, histogramECM);
+					updateHistogram( agentArray, voronoiDiagram, histogram, histogramDividing, histogramNecrotic, histogramFree, histogramECM);
 
 
 					// GET ALL BORDER CELLS

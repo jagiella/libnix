@@ -5624,15 +5624,16 @@ bool VoronoiDiagram::isHomogen( VoronoiCell *vc, int scale, int &type)
 
 bool VoronoiCell::isDomainBorder( VoronoiDiagram *vd)
 {
+	//fprintf( stderr, "[%f, %f]\n", this->position[0], this->position[1]);
 	return this->position[0] < vd->xMin[0] + vd->boundaryThickness
-	    && this->position[0] > vd->xMax[0] - vd->boundaryThickness
+	    || this->position[0] > vd->xMax[0] - vd->boundaryThickness
 #if DIMENSIONS >= 2
-		&& this->position[1] < vd->xMin[1] + vd->boundaryThickness
-		&& this->position[1] > vd->xMax[1] - vd->boundaryThickness
+		|| this->position[1] < vd->xMin[1] + vd->boundaryThickness
+		|| this->position[1] > vd->xMax[1] - vd->boundaryThickness
 #endif
 #if DIMENSIONS >= 3
-		&& this->position[2] < vd->xMin[2] + vd->boundaryThickness
-		&& this->position[2] > vd->xMax[2] - vd->boundaryThickness
+		|| this->position[2] < vd->xMin[2] + vd->boundaryThickness
+		|| this->position[2] > vd->xMax[2] - vd->boundaryThickness
 #endif
 		;
 }

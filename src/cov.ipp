@@ -152,10 +152,10 @@ T covMatern( T* &x1, T* &x2, int &d, T* &theta)
 			//
 			/*fprintf(stderr, "%e %e %e\n",
 					pow( 2, 1-nu),
-					gamma(nu),
+					tgamma(nu),
 					pow(temp, nu));*/
 			if(dist>0){
-				return sf2*pow( 2, 1-nu) / gamma(nu) * pow(temp, nu) * gsl_sf_bessel_Knu( nu, temp);
+				return sf2*pow( 2, 1-nu) / tgamma(nu) * pow(temp, nu) * gsl_sf_bessel_Knu( nu, temp);
 			}else{
 				return sf2*1.;
 			}

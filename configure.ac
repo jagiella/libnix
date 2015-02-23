@@ -10,6 +10,8 @@ AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE
+AM_SILENT_RULES([yes])
+
 LDFLAGS="$LDFLAGS -L/opt/local/lib -L/opt/local/lib/gcc49"
 CPPFLAGS="$CPPFLAGS -I/opt/local/lib/gcc49/gcc/x86_64-apple-darwin14/4.9.1/include -I/opt/local/include"
 

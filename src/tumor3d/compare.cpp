@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h> // strcpy
 #include <sys/utsname.h> // uname
+#include <time.h> // time
 
 #include "AsciiIO.h"
 #include "Montecarlo.h"
@@ -82,6 +83,8 @@ int main( int argc, char **argv)
 	//printf("%s", unameData.nodename);
 
 	sprintf( simdir, "%s_PID%i", unameData.nodename, pid); //fprintf( stderr, "[OUTPUTDIR: %s]\n", simdir);
+	bool remove_simulation_directory = true;
+
 	char option[512];
 	addOption( parc, parv, "nix-tumor3d");
 	addOption( parc, parv, "-x1");
@@ -92,7 +95,8 @@ int main( int argc, char **argv)
 	addOption( parc, parv, "-k10");
 	addOption( parc, parv, "-RExponentialReentranceProbability");
 	addOption( parc, parv, "-M10");
-	sprintf( option, "-d%s", simdir);
+	srand (time(NULL));
+	sprintf( option, "-s%i", rand() % 1000);
 	addOption( parc, parv, option);
 	/*if (fp = fopen(data_filename_gc, "r")){
 		fclose(fp);
@@ -123,6 +127,13 @@ int main( int argc, char **argv)
 		}else if( argv[i][0] == '-' && argv[i][1] == 'k'){
 			sprintf( option, "-2%s", &argv[i][2]);
 			addOption( parc, parv, option);
+		}else if( argv[i][0] == '-' && argv[i][1] == 'E'){
+			sprintf( option, "-4%s", &argv[i][2]);
+			addOption( parc, parv, option);
+		}else if( argv[i][0] == '-' && argv[i][1] == 'd'){
+			sprintf( simdir, "%s", &argv[i][2]);
+			remove_simulation_directory = false;
+			addOption( parc, parv, option);
 		}else{
 			switch(par_count){
 			case 0: sprintf( option, "-v%s", argv[i]); break;
@@ -138,6 +149,11 @@ int main( int argc, char **argv)
 			//fprintf( stderr, "%i: %s\n", parc, parv[parc-1]);
 		}
 	}
+
+	sprintf( option, "-d%s", simdir);
+	addOption( parc, parv, option);
+
+
 	//fprintf(stderr, " parc = %i\n", parc);
 
 	//fprintf(stderr, " SIM\n");
@@ -205,8 +221,10 @@ int main( int argc, char **argv)
 
 	}*/
 
-	char command[512];
-	sprintf( command, "rm -rf %s", simdir);
-	system( command);
+	if( remove_simulation_directory){
+		char command[512];
+		sprintf( command, "rm -rf %s", simdir);
+		system( command);
+	}
 
 }

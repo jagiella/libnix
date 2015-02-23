@@ -165,10 +165,13 @@ int main( int argc, char **argv){
 		dim = 7;
 		double tlb[] = {-3,1,0,-3,-5,-5,-5};
 		double tub[] = {-1,3,3,0,0,0,0};
-		double tx0[] = {-2,1.5, log10(100), log10(0.75) };
-		double tsol_true[] = {log10(1/24.),2, log10(50), log10(0.75) };
+		//double tx0[] = {-2,1.5, log10(100), log10(0.75) };
+		double tsol_true[] = {log10(1/24.), log10(100),   log10(50), log10(0.25),   log10(0.0033), log10(0.0005), log10(0.003) };
 		for( int i=0; i<dim; i++){
-			lb[i]=tlb[i];ub[i]=tub[i];x0[i]=tx0[i];sol_true[i]=tsol_true[i];
+			lb[i]=tlb[i];
+			ub[i]=tub[i];
+			x0[i]=0.5*(tlb[i]+tub[i]);//tx0[i];
+			sol_true[i]=tsol_true[i];
 		}
 		func = myfunc3;
 	}break;
