@@ -3704,7 +3704,8 @@ double montecarlo(int argc, char **argv)
 #endif
 		// END IMMIDIATE OUTPUT
 
-		//actionList->addAction( newAction( GAP, 0./TIME_STEP));
+		actionList->addAction( newAction( GAP, 1./OutputRate));
+		//actionList->addAction( newAction( GAP, 1./TIME_STEP));
 
 		/** SIMULATION **/
 
@@ -4678,8 +4679,8 @@ double montecarlo(int argc, char **argv)
 
 #endif //USE_LYSIS
 					case GAP:
-						fprintf(stderr, "\n GAP \n");
-						Time = Last_Time + 1. / selected_action->rate;
+						//fprintf(stderr, "\n GAP \n");
+						//Time = Last_Time + 1. / selected_action->rate;
 						break;
 
 					default:
@@ -5637,6 +5638,10 @@ double montecarlo(int argc, char **argv)
 					//return cumEpsilon + maxEpsilon;
 					return maxEpsilon;
 				}*/
+
+				//if( data_growthcurve.dim && maxRadius < sqrt(gyrRadius) * AGENT_DIAMETER * 0.8)
+				//	return maxEpsilon;
+
 				global_gyrRadius[l] += sqrt(gyrRadius);
 
 				global_gyrRadiusSquare[l] += gyrRadius;
