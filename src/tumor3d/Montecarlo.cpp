@@ -5458,7 +5458,7 @@ double montecarlo(int argc, char **argv)
 					for (l = indexOfTime( Last_Time, BeginningTime, OutputRate) + 1;
 						 l < indexOfTime( Time, BeginningTime, OutputRate);
 						 l++) {
-						fprintf(stderr, "< [%i, %f]\n", l, timeOfIndex ( l, BeginningTime, OutputRate));
+						//fprintf(stderr, "< [%i, %f]\n", l, timeOfIndex ( l, BeginningTime, OutputRate));
 						fprintf(	fp, "%e %i %e\n",
 							timeOfIndex ( l, BeginningTime, OutputRate),
 							Last_NumberOfCells,
@@ -5466,7 +5466,7 @@ double montecarlo(int argc, char **argv)
 							);
 					}
 					l = indexOfTime( Time, BeginningTime, OutputRate);
-					fprintf(stderr, "= [%i, %f], %f\n", l, timeOfIndex ( l, BeginningTime, OutputRate), Time);
+					//fprintf(stderr, "= [%i, %f], %f\n", l, timeOfIndex ( l, BeginningTime, OutputRate), Time);
 
 					fprintf(	fp, "%e %i %e\n",
 							timeOfIndex ( l, BeginningTime, OutputRate),
