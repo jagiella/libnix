@@ -1677,6 +1677,7 @@ double montecarlo(int argc, char **argv)
 	//int nocim;
 
 	int Last_NumberOfCells = 0;
+	double Last_gyrRadius = 0;
 
 	// Time
 	double Time, Last_Time, EndEndTime = 120, EndTime = 120;
@@ -3657,7 +3658,7 @@ double montecarlo(int argc, char **argv)
 		timer = time(NULL);
 		Last_Time = Time = 0.0;
 		//gyrRadius = getGyrationRadius(agentArray);
-		gyrRadius = getGyrationRadiusOfBorder(agentArray, voronoiDiagram);
+		Last_gyrRadius = gyrRadius = getGyrationRadiusOfBorder(agentArray, voronoiDiagram);
 
 		l = (int) Time;
 		global_cells[l] += count_cells;
@@ -3698,8 +3699,7 @@ double montecarlo(int argc, char **argv)
 			//exit(0);
 		}
 		fprintf(fp, "# %i realisations\n", k + 1);
-		fprintf(fp,
-				"# rows: time, tumor cells, necrotic cells, vessel segments\n");
+		fprintf(fp,	"# rows: time, tumor cells, necrotic cells, vessel segments\n");
 		fclose(fp);
 #endif
 		// END IMMIDIATE OUTPUT
@@ -5446,6 +5446,9 @@ double montecarlo(int argc, char **argv)
 					}
 				}
 
+				Last_gyrRadius = gyrRadius;
+				gyrRadius = getGyrationRadiusOfBorder(agentArray, voronoiDiagram);
+
 				{
 					int l;
 
@@ -5455,15 +5458,15 @@ double montecarlo(int argc, char **argv)
 					for (l = indexOfTime( Last_Time, BeginningTime, OutputRate) + 1;
 						 l < indexOfTime( Time, BeginningTime, OutputRate);
 						 l++) {
-						//fprintf(stderr, "[%i]\n", l);
+						fprintf(stderr, "< [%i, %f]\n", l, timeOfIndex ( l, BeginningTime, OutputRate));
 						fprintf(	fp, "%e %i %e\n",
 							timeOfIndex ( l, BeginningTime, OutputRate),
 							Last_NumberOfCells,
-							( isnan(gyrRadius) ? sqrt(DIMENSIONS*50*50) : sqrt(gyrRadius) ) * AGENT_DIAMETER * 0.8
+							( isnan(Last_gyrRadius) ? sqrt(DIMENSIONS*50*50) : sqrt(Last_gyrRadius) ) * AGENT_DIAMETER * 0.8
 							);
 					}
 					l = indexOfTime( Time, BeginningTime, OutputRate);
-					//fprintf(stderr, "[%i]\n", l);
+					fprintf(stderr, "= [%i, %f], %f\n", l, timeOfIndex ( l, BeginningTime, OutputRate), Time);
 
 					fprintf(	fp, "%e %i %e\n",
 							timeOfIndex ( l, BeginningTime, OutputRate),
@@ -5512,9 +5515,9 @@ double montecarlo(int argc, char **argv)
 
 					global_vessel_cells[l] += count_vessel_cells;
 
-					global_gyrRadius[l] += sqrt(gyrRadius);
+					global_gyrRadius[l] += sqrt(Last_gyrRadius);
 
-					global_gyrRadiusSquare[l] += gyrRadius;
+					global_gyrRadiusSquare[l] += Last_gyrRadius;
 
 					global_avgGlucose[l] += getAvgGlucose(agentArray);
 					global_avgOxygen[l] += getAvgOxygen(agentArray);
@@ -5632,7 +5635,6 @@ double montecarlo(int argc, char **argv)
 				global_vessel_cells[l] += count_vessel_cells;
 
 				//gyrRadius = getGyrationRadius(agentArray);
-				gyrRadius = getGyrationRadiusOfBorder(agentArray, voronoiDiagram);
 				/*if( data_growthcurve.dim && maxRadius < ( isnan(gyrRadius) ? sqrt(DIMENSIONS)*50 : sqrt(gyrRadius) ) * AGENT_DIAMETER * 0.8){
 					//fprintf(stderr, "(( max radius exeeded ))\n");
 					//return cumEpsilon + maxEpsilon;
