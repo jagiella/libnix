@@ -2095,18 +2095,18 @@ int addNeighbor( VoronoiCell* voronoiCell, VoronoiCell* neighborCell)
 	}
 	
 
-	//printf("realloc: %i -> %i\n", voronoiCell->countNeighborCells, voronoiCell->countNeighborCells+1);
+//	printf("realloc: %i -> %i\n", voronoiCell->countNeighborCells, voronoiCell->countNeighborCells+1);
 	//if( voronoiCell->countNeighborCells != 0)
 		voronoiCell->neighborCells = (VoronoiCell**) realloc( voronoiCell->neighborCells, (voronoiCell->countNeighborCells+1)*sizeof(VoronoiCell*));
 		assert(voronoiCell->neighborCells);
 	//else
 	//	voronoiCell->neighborCells = (VoronoiCell**) malloc( sizeof());
-	//printf("set new neighbor at the end of neighbor list\n");
+//	printf("set new neighbor at the end of neighbor list\n");
 	voronoiCell->neighborCells[voronoiCell->countNeighborCells] = neighborCell;
-	//printf("increase neighbor counter\n");
+//	printf("increase neighbor counter\n");
 	voronoiCell->countNeighborCells++;	
-	//printf("done!\n");
-
+//	printf("done!\n");
+//exit(0);
 	return 1;
 }
 /*****************************************************************************/
@@ -3493,6 +3493,9 @@ VoronoiCell::VoronoiCell()
 	this->neighborCellsInitialized = FALSE;
 	this->extendedNeighborCellsInitialized = FALSE;
 
+	this->countNeighborCells = 0;
+	this->neighborCells = 0;
+
 	// agent
 	this->agent = NULL;
 
@@ -3518,6 +3521,9 @@ VoronoiCell::VoronoiCell( double x, double y, double z)
 	// neighborhood
 	this->neighborCellsInitialized = FALSE;
 	this->extendedNeighborCellsInitialized = FALSE;
+
+	this->countNeighborCells = 0;
+	this->neighborCells = 0;
 
 	// agent
 	this->agent = NULL;
@@ -3935,6 +3941,9 @@ VoronoiDiagram* VoronoiDiagram::newVoronoiDiagram( int x, int y, int z){
 		newVoronoiDiagram->voronoiCells[i]->agent = NULL;
 
 		newVoronoiDiagram->voronoiCells[i]->refined = false;
+
+		newVoronoiDiagram->voronoiCells[i]->countNeighborCells = 0;
+		newVoronoiDiagram->voronoiCells[i]->neighborCells = 0;
 
 		i++;
 	}

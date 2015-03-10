@@ -4,7 +4,7 @@ bin_PROGRAMS = nix-tumor3d nix-tumor2d nix-compare3d nix-compare2d
 
 nix_tumor3d_SOURCES = main.cpp AsciiIO.cpp Montecarlo.cpp Agent.cpp Angiogenesis.cpp CellProcesses.cpp DiffusionReactionEquation.cpp finiteDifferences.cpp Interpolation.cpp Mathematix.cpp Molecule.cpp SparseMatrix.cpp Substrate.cpp EpsIO.cpp PovrayIO.cpp Vessel_Graph.cpp Vessel_Unit.cpp VesselNetwork.cpp VoronoiDiagramExtended.cpp
 nix_tumor3d_LDADD = -lm  ../libnix.la
-nix_tumor3d_CXXFLAGS = -DDIMENSIONS=3
+nix_tumor3d_CXXFLAGS = -DDIMENSIONS=3 -g
 
 nix_tumor2d_SOURCES = main.cpp AsciiIO.cpp Montecarlo.cpp Agent.cpp Angiogenesis.cpp CellProcesses.cpp DiffusionReactionEquation.cpp finiteDifferences.cpp Interpolation.cpp Mathematix.cpp Molecule.cpp SparseMatrix.cpp Substrate.cpp EpsIO.cpp PovrayIO.cpp Vessel_Graph.cpp Vessel_Unit.cpp VesselNetwork.cpp VoronoiDiagramExtended.cpp
 nix_tumor2d_LDADD = -lm  ../libnix.la
