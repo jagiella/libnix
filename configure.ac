@@ -54,5 +54,6 @@ AC_CONFIG_FILES([Makefile
                  src/tumor3d/Makefile
                  src/bin_abc/Makefile
                  src/lunatick/Makefile
+                 src/offlattice/Makefile
                  src/Makefile])
 AC_OUTPUT
