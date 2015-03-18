@@ -5,7 +5,7 @@ bin_PROGRAMS = offlattice #offlattice-gui
 offlattice_SOURCES = main.cpp Agent.cpp Kinetics.cpp Covariance.cpp
 offlattice_LDADD = 
 offlattice_LDFLAGS =
-offlattice_CXXFLAGS = -DNOGUI -g
+offlattice_CXXFLAGS = -I.. -DNOGUI -g
 
 offlattice_gui_SOURCES = main.cpp Agent.cpp Kinetics.cpp Color.cpp Covariance.cpp Window.cpp moc_Window.cpp moc_WindowGL.cpp
 offlattice_gui_LDADD = 
