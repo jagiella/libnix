@@ -23,9 +23,9 @@ class AgentList;
 class Agent {
 	template <class AgentType> friend class AgentList;
 protected:
-	static const float TPwnt;
-	static const float TPnotch;
-	static const  float TDwnt;
+//	static const float TPwnt;
+//	static const float TPnotch;
+//	static const  float TDwnt;
 
 	int   _index;
 	float _radius;
@@ -35,6 +35,10 @@ protected:
 	float *_acceleration;
 	float _pressure;
 public:
+	static float TPwnt;
+	static float TPnotch;
+	static float TDwnt;
+
 	int   _substrateContacts;
 
 	static float wntmin;
@@ -88,12 +92,18 @@ public:
 		//fprintf(stderr, "BEGIN\n");
 		switch(_type){
 		case Agent::StemCell:
-			if( notch( al, boxes) <= TPnotch)
-				// Asymmetric Division -> Secretory
-				_type = Agent::Secretory;
-			if( notch( al, boxes) >= TPnotch && wnt() <= TPwnt)
-				// Asymmetric Division -> Absorptive
-				_type = Agent::Absorptive;
+			if( wnt() <= TPwnt){
+				// Priming
+				if( notch( al, boxes) < TPnotch){
+					_type = Agent::Secretory;
+				}else{
+					_type = Agent::Absorptive;
+				}
+			}else{
+				// Terminal Paneth
+				if( notch( al, boxes) < TPnotch)
+					_type = Agent::Paneth;
+			}
 			break;
 
 		case Agent::Secretory:
@@ -103,25 +113,29 @@ public:
 					_type = Agent::Goblet;
 				else
 					_type = Agent::Enteroendocrine;
-			}else
-			// Terminal Paneth?
-				if( wnt() >=  TPwnt /*&& radius() == 5*/){
-					_type = Agent::Paneth;
-				}else{
-					_type = Agent::StemCell;
-					differentiate(al, boxes);
-				}
+			}
+
+			// Reverse priming
+			else if( wnt() > TPwnt)
+				_type = Agent::StemCell;
+
+			// Delta-Notch-Signaling
+			else if( TPwnt > wnt() && wnt() >= TDwnt && notch( al, boxes) >= TPnotch)
+				_type = Agent::Absorptive;
 			break;
 
 		case Agent::Absorptive:
-
-			//
-			if( wnt() <= TDwnt){
-				_type = Agent::Enterocyte;
-			}else{
+			// Reverse priming
+			if( wnt() > TPwnt)
 				_type = Agent::StemCell;
-				differentiate(al, boxes);
-			}
+
+			// Terminal Enterocyte?
+			else if( wnt() <= TDwnt)
+				_type = Agent::Enterocyte;
+
+			// Delta-Notch-Signaling
+			else if( notch( al, boxes) < TPnotch)
+				_type = Agent::Secretory;
 			break;
 
 			default:
@@ -349,16 +363,15 @@ public:
 	template <class AgentType>
 	int notch( AgentList<AgentType> *al, Boxes<Agent*> *boxes)			{
 
-		int i=this->_index;
-		int notch=0;
-		BoxIterator<Agent*> boxIt( boxes, al->at(i)->position(), 1);
-
 		if( Agent::NotchKnockout == +1)
 			return 10;
 
 		if( Agent::NotchKnockout == -1)
 			return 0;
 
+		int i=this->_index;
+		int notch=0;
+		BoxIterator<Agent*> boxIt( boxes, al->at(i)->position(), 1);
 		for( ; !boxIt.end(); boxIt++){
 			//count++;
 			Agent *a = *boxIt;
@@ -366,7 +379,8 @@ public:
 			if( j!=i && al->inContact( i,j) && (
 					al->at(j)->type() == Agent::Secretory ||
 					al->at(j)->type() == Agent::Paneth ||
-					al->at(j)->type() == Agent::Goblet)){
+					al->at(j)->type() == Agent::Goblet ||
+					al->at(j)->type() == Agent::Enteroendocrine)){
 				notch++;
 				//fprintf(stderr, "\nPANETH CELL FOUND!!!\n");
 			}

@@ -6,13 +6,13 @@
 #include <Color.hpp>
 #include <Macros.hpp>
 
-#include <QGLWidget>
-#include <QtOpenGL>
+#include <QtOpenGL/QGLWidget>
+#include <QtOpenGL/QtOpenGL>
 
 #include <GLUT/glut.h>
 
-#include <QMouseEvent>
-#include <QTime>
+#include <QtGui/QMouseEvent>
+#include <QtCore/QTime>
 
 
 class WindowGL : public QGLWidget
@@ -196,6 +196,11 @@ protected:
                     	mat_diffuse[0] = 0.f;
                     	mat_diffuse[1] = 0.5f;
                     	mat_diffuse[2] = 0.8f;
+                    	break;
+                    case Agent::Enteroendocrine:    // light blue
+                    	mat_diffuse[0] = 1.0f;
+                    	mat_diffuse[1] = 1.0f;
+                    	mat_diffuse[2] = 1.0f;
                     	break;
                     case Agent::Enterocyte:// yellow
                     	mat_diffuse[0] = 0.8f;

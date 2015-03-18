@@ -16301,6 +16301,13 @@ else
 fi
 
 
+#PKG_CHECK_MODULES(QT5, [QtCore QtGui >= 5.0.0], [
+#  AC_PATH_PROGS(MOC, [moc-qt5 moc], moc,`eval $PKG_CONFIG --variable=exec_prefix QtCore`/bin)
+#  AC_PATH_PROG(RCC, rcc, rcc,`eval $PKG_CONFIG --variable=exec_prefix QtCore`/bin)
+#  AC_PATH_PROGS(UIC, [uic-qt5 uic], uic,`eval $PKG_CONFIG --variable=exec_prefix QtCore`/bin)
+#], [
+#  AC_MSG_ERROR([Qt 5 library not found])
+#])
 
 # Checks for header files.
 for ac_header in float.h stdint.h stdlib.h string.h unistd.h

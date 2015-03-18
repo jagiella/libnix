@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <locale.h>
+#include <unistd.h>
 
 #define EndOfLine 10
 
@@ -45,7 +46,33 @@ void readFloatParameter( const char *text, float &parameter){
 
 
 int main(int argc, char **argv)
- {
+{
+	// PREDEFINED PARAMETERS
+	bool verbosity = false;
+	bool snapshots = false;
+	float epsilon;
+	double  parameters[100];
+	int num_parameters=0;
+
+	// READ COMMANDLINE OPTIONS
+	char c;
+	while ((c = getopt (argc, argv, "vse:")) != -1)
+		switch (c){
+		case 'v':
+			verbosity = true;
+			break;
+		case 's':
+			snapshots = true;
+			break;
+		case 'e':
+			epsilon = atof(optarg);
+			break;
+		}
+	for (int index = optind; index < argc; index++){
+		parameters[num_parameters++] = atof( argv[index]);
+	    //printf ("Non-option argument %s\n", argv[index]);
+	}
+
 #ifndef NOGUI
 	 setlocale(LC_ALL,"C");
 
@@ -80,7 +107,7 @@ int main(int argc, char **argv)
 
      return app.exec();
 #else
-     simCrypt( agents, box, &time);
+     simCrypt( agents, box, &time, verbosity, snapshots, parameters, num_parameters);
 
 #endif
  }

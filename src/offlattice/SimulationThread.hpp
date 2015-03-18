@@ -283,7 +283,9 @@ float erl(float mean, float m) {
 
 
 #ifndef NOGUI
-#include <QThread>
+#include <QtCore/QThread>
+
+void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity, bool snapshots, double *parameters, int num_parameters);
 
 class MyThread: public QThread {
 private:
@@ -404,15 +406,15 @@ public:
 	void run() {
 		fprintf(stderr, "START SIM\n");
 
-		simCrypt();
+		simCrypt( al, box, time, true, true, 0, 0);
 		//simMonolayer();
 		//simCylinder();
 		fprintf(stderr, "STOPPED SIM\n");
 	};
 
-	void simCylinder();
-	void simMonolayer();
-	void simCrypt() { simCrypt( al, box, time);};
+	//void simCylinder();
+	//void simMonolayer();
+	//void simCrypt() { simCrypt( al, box, time);};
 };
 
 #endif //NOGUI
@@ -672,7 +674,67 @@ void MyThread::sim() {
 */
 
 
-void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time) {
+void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity, bool write_snapshots, double *parameters, int num_parameters) {
+
+	// INPUT
+	float data_mean[box->Y][Agent::TypeSize];
+	float data_std [box->Y][Agent::TypeSize];
+	if( !write_snapshots){
+		for( int pos=0; pos<box->Y; pos++)
+			for( int typ=0; typ<Agent::TypeSize; typ++)
+				data_mean[pos][typ] = data_std [pos][typ] = 0;
+		FILE *fp_in;
+		char line[1024], *p_word;
+		int size =0;
+
+		for( int ti=0; ti<4; ti++){ // time points
+			char filename[1024];
+			sprintf( filename, "snapshot_t%i.dat", ti);
+			fp_in = fopen( filename, "r");
+			while( fgets(line, 1024, fp_in) != NULL){ // position
+				 /* get a line, up to 80 chars from fr.  done if NULL */
+				int pos = (int) strtof( line, &p_word);
+				//printf ("pos = %i\n", pos);
+				for( int typ=0; typ<Agent::TypeSize; typ++){ // cell types
+					float value = strtof( p_word, &p_word);
+					data_mean[pos][typ] += value;
+					data_std [pos][typ] += value*value;
+					//printf ("%f\n", data_mean[j][i]);
+				}
+				//printf ("\n");
+			}
+			fclose( fp_in);
+
+			for( int pos=0; pos<box->Y; pos++){
+				for( int typ=0; typ<Agent::TypeSize; typ++){
+					data_mean[pos][typ] /= 4.;
+					data_std [pos][typ] = sqrt(data_std [pos][typ] / 4. - data_mean[pos][typ]*data_mean[pos][typ]);
+					//printf ("%f\n", data_mean[pos][typ]);
+				}
+				//printf ("\n");
+			}
+		}
+	}
+
+
+	// PARAMETERS
+	for( int i=0; i<num_parameters; i++)
+		switch(i){
+		case 0:
+			Agent::TPwnt   = parameters[i]; break;
+		case 1:
+			Agent::TPnotch = parameters[i]; break;
+		case 2:
+			Agent::TDwnt = parameters[i]; break;
+		}
+
+
+
+	// OUTPUT SETTINGS
+	int output_offset   = 200;
+	int output_duration = 100;
+	int output_interval = 24;
+
 
 	setlocale(LC_ALL,"C");
 
@@ -688,7 +750,7 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time) {
 				box->X * box->latticeConstant / 2. - RAND01,
 				y0 + RAND01,
 				z0);
-		printf("x=%e, y=%e, z=%e\n", a->position()[0], a->position()[1], a->position()[2]);
+		if(verbosity) printf("x=%e, y=%e, z=%e\n", a->position()[0], a->position()[1], a->position()[2]);
 
 		a->set_type(Agent::StemCell);
 		a->radius() = 5.1;
@@ -781,9 +843,10 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time) {
 
 	char MODEL = 3;
 
-	mexPrintf("SIMULATE (%i)\n", rand());
+	if(verbosity)
+		mexPrintf("SIMULATE (%i)\n", rand());
 	float dt = 0.1;
-	float tend = 1000;
+	float tend = 300;
 
 	float randVelocity[Agent::TypeSize], *p_randVelocity = randVelocity;
 	float baseVelocity = 1000;
@@ -931,8 +994,8 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time) {
 
 
 
-
-		mexPrintf("\r time = %.2lf hours, clock (%.2lf, %.2lf, %.2lf, %.2lf, %.2lf),  dt =  %e \b",
+		if(verbosity)
+			mexPrintf("\r time = %.2lf hours, clock (%.2lf, %.2lf, %.2lf, %.2lf, %.2lf),  dt =  %e \b",
 				t,
 				clck_rand/(float)CLOCKS_PER_SEC,
 				clck_forces/(float)CLOCKS_PER_SEC,
@@ -947,8 +1010,12 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time) {
 		//usleep(10000);
 
 		// OUTPUT
-		if( ceil(t-dt) == floor(t) ){
-			;
+		if( t >= output_offset &&
+		    t <= output_offset + output_duration &&
+			//ceil(t-dt) == floor(t)
+			floor((t-dt)/output_interval) != floor(t/output_interval)
+		)
+		{
 			int stats[box->Y][Agent::TypeSize];
 			int count[box->Y];
 			for( int pos=0; pos<box->Y; pos++){
@@ -966,25 +1033,40 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time) {
 					stats[pos][typ] ++;
 					count[pos] ++;
 
-					if( t>400){
+					if( t>output_offset){
 						g_stats[pos][typ] ++;
 						g_count[pos] ++;
 					}
 				}
 
-			FILE *fp = fopen( "profiles.dat", "a+");
+			FILE *fp;
 
-			for( int pos=0; pos<box->Y; pos++)
-			if( count[pos]){
-				fprintf( fp, "%e %i ", floor(t), pos);
-				for( int typ=0; typ<Agent::TypeSize; typ++)
-					fprintf( fp, "%e ", (float)stats[pos][typ] / (float)count[pos]);
-				fprintf( fp, "\n");
+			if(write_snapshots && floor((t-dt)/output_interval) != floor(t/output_interval)){
+				// snapshot
+				char filename[1024];
+				sprintf( filename, "snapshot_t%i.dat", (int)((t-output_offset)/output_interval));
+				fp = fopen( filename, "w+");
+				for( int pos=0; pos<box->Y; pos++){
+					fprintf( fp, "%i ", pos);
+					for( int typ=0; typ<Agent::TypeSize; typ++)
+						fprintf( fp, "%e ", (count[pos] ? (float)stats[pos][typ] / (float)count[pos] : 0));
+					fprintf( fp, "\n");
+				}
+				fclose(fp);
 			}
 
-			fprintf( fp, "\n\n");
-
-			fclose(fp);
+			{ // profiles
+				fp = fopen( "profiles.dat", "a+");
+				for( int pos=0; pos<box->Y; pos++)
+				if( count[pos]){
+					fprintf( fp, "%e %i ", floor(t), pos);
+					for( int typ=0; typ<Agent::TypeSize; typ++)
+						fprintf( fp, "%e ", (float)stats[pos][typ] / (float)count[pos]);
+					fprintf( fp, "\n");
+				}
+				fprintf( fp, "\n\n");
+				fclose(fp);
+			}
 
 			{ // plot cell positions
 				fp = fopen( "cells.dat", "w+");
@@ -998,23 +1080,34 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time) {
 				fclose(fp);
 			}
 
-			// OUTPUT
+			// plot average profiles
 			{
-				FILE *fp = fopen( "profiles_avg.dat", "w+");
 
+				fp = fopen( "profiles_avg.dat", "w+");
 				for( int pos=0; pos<box->Y; pos++)
 				if( g_count[pos]){
 					fprintf( fp, "%i ", pos);
 					for( int typ=0; typ<Agent::TypeSize; typ++)
 						fprintf( fp, "%e ", (float)g_stats[pos][typ] / (float)g_count[pos]);
+
 					fprintf( fp, "\n");
 				}
-
 				fclose(fp);
+
+
 			}
 
 		}
 	}
+
+	double lik = 0;
+	for( int pos=0; pos<box->Y; pos++){
+		for( int typ=0; typ<Agent::TypeSize; typ++)
+		if( data_std[pos][typ] > 0.)
+			lik += pow( (g_count[pos] ? (float)g_stats[pos][typ] / (float)g_count[pos] : 0) - data_mean[pos][typ], 2) / pow( data_std[pos][typ], 2);
+	}
+	//fprintf( stderr, "lik = %e\n", lik);
+	fprintf( stdout, "%e\n", lik);
 
 
 }

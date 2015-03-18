@@ -10,9 +10,9 @@
 
 #include "Window.hpp"
 
-#include <QPainter>
-#include <QMouseEvent>
-#include <QTimer>
+#include <QtGui/QPainter>
+#include <QtGui/QMouseEvent>
+#include <QtCore/QTimer>
 
 #include <math.h>
 

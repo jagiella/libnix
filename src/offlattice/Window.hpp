@@ -12,7 +12,7 @@
 #include "Agent.hpp"
 #include "Boxes.hpp"
 
-#include <QWidget>
+#include <QtWidgets/QWidget>
 
 class QTimer;
 

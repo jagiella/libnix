@@ -10,11 +10,11 @@
 //static const float AgentList::pressureThreshold = 6e2;
 
 // Notch Threshold (Priming Differentiation)
-const float Agent::TPnotch = 1;
+float Agent::TPnotch = 1;
 // WNT Threshold   (Priming Differentiation)
-const float Agent::TPwnt = 0.8;
+float Agent::TPwnt = 0.8;
 // WNT Threshold   (Terminal Differentiation)
-const float Agent::TDwnt = 0.2;
+float Agent::TDwnt = 0.2;
 
 float Agent::wntmin = 0;
 float Agent::wntmax = 0;

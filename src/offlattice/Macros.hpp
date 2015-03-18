@@ -13,7 +13,7 @@
 #define RAND01  (rand()/(RAND_MAX + 1.))
 #define RANDE0E1 ((rand() + 1.)/(RAND_MAX + 1.))
 #else
-#include <QtGlobal>
+#include <QtCore/QtGlobal>
 #define RAND01   (qrand()/(RAND_MAX + 1.))
 #define RANDE0E1 ((qrand() + 1.)/(RAND_MAX + 1.))
 #endif

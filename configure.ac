@@ -37,6 +37,13 @@ AC_CHECK_LIB([gslcblas], [main])
 AC_CHECK_LIB([SDL2], [main], [HAS_LIBSDL2=1])
 AM_CONDITIONAL([USE_LIBSDL2], [test "$HAS_LIBSDL2" -eq 1])
 
+#PKG_CHECK_MODULES(QT5, [QtCore QtGui >= 5.0.0], [
+#  AC_PATH_PROGS(MOC, [moc-qt5 moc], moc,`eval $PKG_CONFIG --variable=exec_prefix QtCore`/bin)
+#  AC_PATH_PROG(RCC, rcc, rcc,`eval $PKG_CONFIG --variable=exec_prefix QtCore`/bin)
+#  AC_PATH_PROGS(UIC, [uic-qt5 uic], uic,`eval $PKG_CONFIG --variable=exec_prefix QtCore`/bin)
+#], [
+#  AC_MSG_ERROR([Qt 5 library not found])
+#])
 
 # Checks for header files.
 AC_CHECK_HEADERS([float.h stdint.h stdlib.h string.h unistd.h])
