@@ -1291,7 +1291,7 @@ void simCylinder( AgentList<> *al, Boxes<Agent*> *box, float *time) {
 
 #include <gsl/gsl_odeiv2.h>
 #include <gsl/gsl_errno.h>
-#include "/Users/jagiella/Documents/EclipseWorkspace/Notch/src/rungekutta.hpp"
+#include "rungekutta.hpp"
 
 
 void simMonolayer( AgentList<> *al, Boxes<Agent*> *box, float *time) {
