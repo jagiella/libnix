@@ -846,7 +846,7 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity,
 	if(verbosity)
 		mexPrintf("SIMULATE (%i)\n", rand());
 	float dt = 0.1;
-	float tend = 300;
+	float tend = output_offset + output_duration;
 
 	float randVelocity[Agent::TypeSize], *p_randVelocity = randVelocity;
 	float baseVelocity = 1000;
