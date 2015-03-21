@@ -50,13 +50,15 @@ int main(int argc, char **argv)
 	// PREDEFINED PARAMETERS
 	bool verbosity = false;
 	bool snapshots = false;
+	int num_snapshots = 1;
 	float epsilon;
+	char  directory[1024];
 	double  parameters[100];
 	int num_parameters=0;
 
 	// READ COMMANDLINE OPTIONS
 	char c;
-	while ((c = getopt (argc, argv, "vse:")) != -1)
+	while ((c = getopt (argc, argv, "vsS:e:d:")) != -1)
 		switch (c){
 		case 'v':
 			verbosity = true;
@@ -64,8 +66,14 @@ int main(int argc, char **argv)
 		case 's':
 			snapshots = true;
 			break;
+		case 'S':
+			num_snapshots = atoi(optarg);
+			break;
 		case 'e':
 			epsilon = atof(optarg);
+			break;
+		case 'd':
+			sprintf( directory, optarg);
 			break;
 		}
 	for (int index = optind; index < argc; index++){
@@ -107,7 +115,7 @@ int main(int argc, char **argv)
 
      return app.exec();
 #else
-     simCrypt( agents, box, &time, verbosity, snapshots, parameters, num_parameters);
+     simCrypt( agents, box, &time, verbosity, snapshots, num_snapshots, parameters, num_parameters);
 
 #endif
  }

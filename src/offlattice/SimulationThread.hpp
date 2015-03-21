@@ -285,7 +285,7 @@ float erl(float mean, float m) {
 #ifndef NOGUI
 #include <QtCore/QThread>
 
-void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity, bool snapshots, double *parameters, int num_parameters);
+void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity, bool snapshots, int num_snapshots, double *parameters, int num_parameters);
 
 class MyThread: public QThread {
 private:
@@ -674,7 +674,7 @@ void MyThread::sim() {
 */
 
 
-void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity, bool write_snapshots, double *parameters, int num_parameters) {
+void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity, bool write_snapshots, int num_snapshots, double *parameters, int num_parameters) {
 
 	// INPUT
 	float data_mean[box->Y][Agent::TypeSize];
@@ -687,7 +687,7 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity,
 		char line[1024], *p_word;
 		int size =0;
 
-		for( int ti=0; ti<4; ti++){ // time points
+		for( int ti=0; ti<num_snapshots; ti++){ // time points
 			char filename[1024];
 			sprintf( filename, "snapshot_t%i.dat", ti);
 			fp_in = fopen( filename, "r");
@@ -707,8 +707,8 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity,
 
 			for( int pos=0; pos<box->Y; pos++){
 				for( int typ=0; typ<Agent::TypeSize; typ++){
-					data_mean[pos][typ] /= 4.;
-					data_std [pos][typ] = sqrt(data_std [pos][typ] / 4. - data_mean[pos][typ]*data_mean[pos][typ]);
+					data_mean[pos][typ] /= (float)num_snapshots;
+					data_std [pos][typ] = sqrt(data_std [pos][typ] / (float)num_snapshots - data_mean[pos][typ]*data_mean[pos][typ]);
 					//printf ("%f\n", data_mean[pos][typ]);
 				}
 				//printf ("\n");
@@ -732,8 +732,8 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity,
 
 	// OUTPUT SETTINGS
 	int output_offset   = 200;
-	int output_duration = 100;
 	int output_interval = 24;
+	int output_duration = 24*num_snapshots;
 
 
 	setlocale(LC_ALL,"C");
