@@ -708,7 +708,7 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity,
 			for( int pos=0; pos<box->Y; pos++){
 				for( int typ=0; typ<Agent::TypeSize; typ++){
 					data_mean[pos][typ] /= (float)num_snapshots;
-					data_std [pos][typ] = sqrt(data_std [pos][typ] / (float)num_snapshots - data_mean[pos][typ]*data_mean[pos][typ]);
+					data_std [pos][typ] = 1e-6 + sqrt(data_std [pos][typ] / (float)num_snapshots - data_mean[pos][typ]*data_mean[pos][typ]);
 					//printf ("%f\n", data_mean[pos][typ]);
 				}
 				//printf ("\n");
