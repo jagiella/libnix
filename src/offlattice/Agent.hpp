@@ -361,7 +361,7 @@ public:
 			return 0;
 	}
 	template <class AgentType>
-	int notch( AgentList<AgentType> *al, Boxes<Agent*> *boxes)			{
+	float notch( AgentList<AgentType> *al, Boxes<Agent*> *boxes)			{
 
 		if( Agent::NotchKnockout == +1)
 			return 10;
@@ -370,7 +370,7 @@ public:
 			return 0;
 
 		int i=this->_index;
-		int notch=0;
+		float notch=0;
 		BoxIterator<Agent*> boxIt( boxes, al->at(i)->position(), 1);
 		for( ; !boxIt.end(); boxIt++){
 			//count++;
