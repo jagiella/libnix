@@ -55,10 +55,11 @@ int main(int argc, char **argv)
 	char  directory[1024];
 	double  parameters[100];
 	int num_parameters=0;
+	char data_type = 0; // 0=cell types, 1=foxa2
 
 	// READ COMMANDLINE OPTIONS
 	char c;
-	while ((c = getopt (argc, argv, "vsS:e:d:")) != -1)
+	while ((c = getopt (argc, argv, "vsS:e:d:F")) != -1)
 		switch (c){
 		case 'v':
 			verbosity = true;
@@ -74,6 +75,9 @@ int main(int argc, char **argv)
 			break;
 		case 'd':
 			sprintf( directory, optarg);
+			break;
+		case 'F':
+			data_type = 1; // use foxa2 data
 			break;
 		}
 	for (int index = optind; index < argc; index++){
@@ -115,7 +119,7 @@ int main(int argc, char **argv)
 
      return app.exec();
 #else
-     simCrypt( agents, box, &time, verbosity, snapshots, num_snapshots, parameters, num_parameters);
+     simCrypt( agents, box, &time, verbosity, snapshots, num_snapshots, parameters, num_parameters, data_type);
 
 #endif
  }

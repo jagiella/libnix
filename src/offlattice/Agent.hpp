@@ -349,6 +349,26 @@ public:
 			//return 1.-(7*1000.-_position[1])/150.;
 
 	}
+	static float wnt( float height){
+		return (height - Agent::wntmin)/(Agent::wntmax-Agent::wntmin);
+	}
+	float foxa2(){
+		switch(_type ){
+		case Agent::Secretory:
+		case Agent::Enteroendocrine:
+		case Agent::Goblet:
+			return 1;
+
+		case Agent::Paneth:
+		case Agent::StemCell:
+			return 0.5;
+
+		case Agent::Enterocyte:
+			return 0;
+		}
+
+		return 0.5/(Agent::TPwnt-Agent::TDwnt)*(wnt(_position[1])-Agent::TDwnt);
+	}
 	//static float wnt( float *&pos)	{ return 1.-(7*1000.-pos[1])/150.; }
 	static float gradEphrinB( float *pos, int d)	{
 		UNUSED(pos);
