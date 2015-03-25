@@ -673,8 +673,12 @@ void MyThread::sim() {
 }
 */
 
+#include <sys/types.h>
+#include <sys/stat.h>
 
-void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity, bool write_snapshots, int num_snapshots, double *parameters, int num_parameters, char data_type) {
+void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity, bool write_snapshots, int num_snapshots, double *parameters, int num_parameters, char data_type, char *directory) {
+
+	mkdir( directory, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
 	// INPUT
 	int   data_size = 0;
@@ -931,7 +935,9 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity,
 		g_count[pos] = 0;
 	}
 	{
-		FILE *fp = fopen( "profiles.dat", "w+");
+		char filename[1024];
+		sprintf( filename, "%s/profiles.dat", directory);
+		FILE *fp = fopen( filename, "w+");
 		fclose(fp);
 	}
 
@@ -1062,12 +1068,11 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity,
 				}
 
 			FILE *fp;
+			char filename[1024];
 
 			if(write_snapshots && floor((t-dt)/output_interval) != floor(t/output_interval)){
 				// snapshot
-				char filename[1024];
-
-				sprintf( filename, "snapshot_t%i.dat", (int)((t-output_offset)/output_interval));
+				sprintf( filename, "%s/snapshot_t%i.dat", directory, (int)((t-output_offset)/output_interval));
 				fp = fopen( filename, "w+");
 				for( int pos=0; pos<box->Y; pos++){
 					fprintf( fp, "%i ", pos);
@@ -1077,7 +1082,7 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity,
 				}
 				fclose(fp);
 
-				sprintf( filename, "snapshot_t%i_foxa2.dat", (int)((t-output_offset)/output_interval));
+				sprintf( filename, "%s/snapshot_t%i_foxa2.dat", directory, (int)((t-output_offset)/output_interval));
 				fp = fopen( filename, "w+");
 				for( int pos=0; pos<box->Y; pos++){
 					fprintf( fp, "%i ", pos);
@@ -1089,7 +1094,8 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity,
 			}
 
 			{ // profiles
-				fp = fopen( "profiles.dat", "a+");
+				sprintf( filename, "%s/profiles.dat", directory);
+				fp = fopen( filename, "a+");
 				for( int pos=0; pos<box->Y; pos++)
 				if( count[pos]){
 					fprintf( fp, "%e %i ", floor(t), pos);
@@ -1102,7 +1108,8 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity,
 			}
 
 			{ // plot cell positions
-				fp = fopen( "cells.dat", "w+");
+				sprintf( filename, "%s/cells.dat", directory);
+				fp = fopen( filename, "w+");
 				for( int it=0; it<Agent::TypeSize; it++){
 					for( int a=0; a<al->size(); a++)
 						if( al->at(a)->type() == it){
@@ -1114,7 +1121,8 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity,
 			}
 
 			// plot average profiles
-			fp = fopen( "profiles_avg.dat", "w+");
+			sprintf( filename, "%s/profiles_avg.dat", directory);
+			fp = fopen( filename, "w+");
 			switch(data_type){
 			case 0: // cell types
 				for( int pos=0; pos<box->Y; pos++)
@@ -1128,7 +1136,7 @@ void simCrypt( AgentList<> *al, Boxes<Agent*> *box, float *time, bool verbosity,
 				break;
 
 			case 1: // foxa2
-				fprintf(stderr, "Foxa2 (%i)\n", data_size);
+				//fprintf(stderr, "Foxa2 (%i)\n", data_size);
 				for( int pos=0; pos<box->Y; pos++)
 				if( g_count[pos]){
 					fprintf( fp, "%i ", pos);

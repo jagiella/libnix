@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 	bool snapshots = false;
 	int num_snapshots = 1;
 	float epsilon;
-	char  directory[1024];
+	char  directory[1024]; sprintf(directory, ".");
 	double  parameters[100];
 	int num_parameters=0;
 	char data_type = 0; // 0=cell types, 1=foxa2
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
 
      return app.exec();
 #else
-     simCrypt( agents, box, &time, verbosity, snapshots, num_snapshots, parameters, num_parameters, data_type);
+     simCrypt( agents, box, &time, verbosity, snapshots, num_snapshots, parameters, num_parameters, data_type, directory);
 
 #endif
  }
