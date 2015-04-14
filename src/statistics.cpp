@@ -294,6 +294,12 @@ double normrnd( unsigned int *p_seed)
 	double u1=unifrnd<double>( p_seed), u2=unifrnd<double>( p_seed);
 	return sqrt(-2*log(u1))*cos(2*M_PI*u2);
 }
+double normrnd()
+{
+	// Box-Muller
+	double u1=unifrnd<double>(), u2=unifrnd<double>();
+	return sqrt(-2*log(u1))*cos(2*M_PI*u2);
+}
 
 double mvnpdf_helper( double *a, double **B, double *c, int n){
 

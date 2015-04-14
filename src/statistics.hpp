@@ -12,6 +12,7 @@ template <class T> T unifrnd()                    { return (T)rand()      /(T)(R
 template <class T> T unifrnd( unsigned int *seed) { return (T)rand_r(seed)/(T)(RAND_MAX); }
 void    normrnd( double *rnd, int n, unsigned int *p_seed);
 double  normrnd( unsigned int *p_seed);
+double  normrnd();
 void mvnrnd( double *x, double *mean, double **s2, int n, unsigned int *p_seed);
 double mvnpdf( const double *x, double *mean, double **inv_s2, double det_s2, int n);
 double kdepdf( const double *x, double **samples, double **inv_s2, double det_s2, int n, int nsamples);

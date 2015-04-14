@@ -118,7 +118,10 @@ int main( int argc, char **argv)
 
 	int par_count=0;
 	for( int i=1; i<argc; i++){
-		if( argv[i][0] == '-' && argv[i][1] == 'e'){
+		if( argv[i][0] == '-' && argv[i][1] == 'm'){
+			sprintf( option, "-5%e", atof( &argv[i][2]));
+			addOption( parc, parv, option);
+		}else if( argv[i][0] == '-' && argv[i][1] == 'e'){
 			sprintf( option, "-3%e", atof( &argv[i][2]));
 			addOption( parc, parv, option);
 		}else if( argv[i][0] == '-' && argv[i][1] == 'g'){

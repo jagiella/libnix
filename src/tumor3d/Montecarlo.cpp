@@ -1764,6 +1764,10 @@ double montecarlo(int argc, char **argv)
 	double maxEpsilon = DBL_MAX;
 	double cumEpsilon = 0;
 	int    idxEpsilon = 0;
+	double measurement_error = 0;
+	double measurement_error_gc   = 0;
+	double measurement_error_ki67 = 0;
+	double measurement_error_ecm  = 0;
 	{FILE *fp_raw = fopen( "raw_gc.dat", "w"); fprintf(fp_raw, ""); fclose(fp_raw); }
 	//{FILE *fp_raw = fopen( "raw_ki67.dat", "w"); fprintf(fp_raw, ""); fclose(fp_raw); }
 
@@ -1773,7 +1777,7 @@ double montecarlo(int argc, char **argv)
 			getopt(
 					argc,
 					argv,
-					"1:2:3:4:R:a:b:c:d:e:f:g:i:jo:l:n:M:m:p:s:v:F:t:k:x:y:r:w:z:Z:D:A:NE:B:I:J:K:C:L:S:M:G:O:V:P:Y:W:h"))
+					"1:2:3:4:5:R:a:b:c:d:e:f:g:i:jo:l:n:M:m:p:s:v:F:t:k:x:y:r:w:z:Z:D:A:NE:B:I:J:K:C:L:S:M:G:O:V:P:Y:W:h"))
 			!= EOF) {
 		switch (c) {
 
@@ -1811,6 +1815,11 @@ double montecarlo(int argc, char **argv)
 
 		case '3': {
 			maxEpsilon = atof( optarg);
+			//fprintf( stderr, "Pass epsilon limit %e\n", maxEpsilon) ;
+		} break;
+
+		case '5': {
+			measurement_error = atof( optarg);
 			//fprintf( stderr, "Pass epsilon limit %e\n", maxEpsilon) ;
 		} break;
 
@@ -2078,6 +2087,22 @@ double montecarlo(int argc, char **argv)
 	Oxygen_Diffusion /= pow((double) CountCellsPerVoronoiCell, 2. / DIMENSIONS);
 	Glucose_Diffusion /= pow((double) CountCellsPerVoronoiCell, 2. / DIMENSIONS);
 
+
+	// ADDITIVE MEASUREMENT ERROR
+	measurement_error_gc = 0;
+	for( int j=0; j<data_growthcurve.dim; j++)
+		measurement_error_gc = max<double>( measurement_error_gc, data_growthcurve.m[j]);
+	measurement_error_gc *= measurement_error;
+
+	measurement_error_ki67 = 0;
+	for( int j=0; j<data_KI67.dim; j++)
+		measurement_error_ki67 = max<double>( measurement_error_ki67, data_KI67.m[j]);
+	measurement_error_ki67 *= measurement_error;
+
+	measurement_error_ecm = 0;
+	for( int j=0; j<data_ECM.dim; j++)
+		measurement_error_ecm = max<double>( measurement_error_ecm, data_ECM.m[j]);
+	measurement_error_ecm *= measurement_error;
 
 	// READ DATA
 
@@ -5333,6 +5358,7 @@ double montecarlo(int argc, char **argv)
 						for( int j=0; j<sim_KI67.dim; j++){
 							sim_KI67.x[j] = j;
 							sim_KI67.m[j] = ( histogram[j] - histogramFree[j]>0 ? (double) histogramDividing[j] / (double) (histogram[j] - histogramFree[j]) : 0);
+							sim_KI67.m[j] = max( 0.,  sim_KI67.m[j] + measurement_error_ki67*normrnd());
 							fprintf( fp_raw, "%e %e %e %e\n", data_KI67.x[j], sim_KI67.m[j], data_KI67.m[j], data_KI67.s[j]);
 						}
 						fclose(fp_raw);
@@ -5360,6 +5386,7 @@ double montecarlo(int argc, char **argv)
 								sim_ECM.m[j] = (double) histogramECM[j]	/ (double) histogram[j];
 							else
 								sim_ECM.m[j] = 0;
+							sim_ECM.m[j] = max( 0.,  sim_ECM.m[j] + measurement_error_ecm*normrnd());
 							fprintf( fp_raw, "%e %e %e %e\n", data_ECM.x[j], sim_ECM.m[j], data_ECM.m[j], data_ECM.s[j]);
 						}
 						fclose(fp_raw);
@@ -5429,6 +5456,8 @@ double montecarlo(int argc, char **argv)
 					// passed data points
 					for( ; data_growthcurve.x[idxEpsilon] < Time && idxEpsilon<data_growthcurve.dim; idxEpsilon++){
 						double radius = ( isnan(gyrRadius) ? sqrt(DIMENSIONS*50*50) : sqrt(gyrRadius) ) * AGENT_DIAMETER * 0.8;
+
+						data_growthcurve.m[idxEpsilon] = max( 0.,  data_growthcurve.m[idxEpsilon] + measurement_error_gc*normrnd());
 
 						cumEpsilon += 0.5 * pow( (data_growthcurve.m[idxEpsilon] - radius)/data_growthcurve.s[idxEpsilon], 2)  / data_growthcurve.dim;
 						//fprintf(stderr, "[[ %e ]]\n", cumEpsilon);
