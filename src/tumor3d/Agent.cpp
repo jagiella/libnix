@@ -1111,15 +1111,19 @@ void AgentList::printToPovray( const char *filename, VoronoiDiagram *vd)
 	}
 
 	//PovrayIO::writePovrayHeader();
-	std::fstream fs, fs_necrotic;
-	fs.open( filename, std::fstream::out);
+	std::fstream fs, fs_necrotic, fs_ecm;
 	char filename_necrotic[512]; sprintf(filename_necrotic, "%s.necrotic.pov", filename);
+	char filename_ecm[512];      sprintf(filename_ecm,      "%s.ecm.pov",      filename);
+	fs.open(          filename,          std::fstream::out);
 	fs_necrotic.open( filename_necrotic, std::fstream::out);
+	fs_ecm.open(      filename_ecm,      std::fstream::out);
 
-	PovrayIO::writePovrayHeader( &fs, 0,0,vd->xN[0],vd->xN[1]);
+	PovrayIO::writePovrayHeader( &fs,          0,0,vd->xN[0],vd->xN[1]);
 	PovrayIO::writePovrayHeader( &fs_necrotic, 0,0,vd->xN[0],vd->xN[1]);
-	fs<<"background { color Black }\n";
+	PovrayIO::writePovrayHeader( &fs_ecm,      0,0,vd->xN[0],vd->xN[1]);
+	fs         <<"background { color Black }\n";
 	fs_necrotic<<"background { color Black }\n";
+	fs_ecm     <<"background { color Black }\n";
 	for( int a=0; a<this->countActiveAgents; a++){
 		fprintf(stderr, "\r%.2lf %% of (active) Agents \b", 100. * a/this->countActiveAgents);
 		bool dividing = false;
@@ -1127,8 +1131,14 @@ void AgentList::printToPovray( const char *filename, VoronoiDiagram *vd)
 
 		for( int l=0; l<this->agents[a]->countLocations; l++){
 			bool print = false;
-			if( (int)(vd->xMin[2]+vd->xMax[2])/2 == (int)this->agents[a]->location[l]->position[2] )
+			if( DIMENSIONS==2 || (int)(vd->xMin[2]+vd->xMax[2])/2 == (int)this->agents[a]->location[l]->position[2] )
 				print = true;
+
+			char color_ecm[512];
+			sprintf( color_ecm, "Green transmit %f", 1 - this->agents[a]->location[l]->ecm / 0.3);
+			PovrayIO::writeSphere(&fs_ecm,
+				this->agents[a]->location[l]->position[0],this->agents[a]->location[l]->position[1],
+				NUCLEUS_DIAMETER/2. / SPATIAL_UNIT, color_ecm);
 
 			char color[512] = "Red";
 			char color_necrotic[512] = "Blue";
@@ -1205,6 +1215,7 @@ void AgentList::printToPovray( const char *filename, VoronoiDiagram *vd)
 	}
 	fs.close();
 	fs_necrotic.close();
+	fs_ecm.close();
 
 	/*char filename2[512];
 	sprintf(filename2, "%s.dat", filename);

@@ -1721,6 +1721,7 @@ double montecarlo(int argc, char **argv)
 
 	bool NoRadialProfiles = false;
 	bool NoSliceOutput = false;
+	bool PovrayOutput = false;
 
 	int     RadialProfilesCount = 0;
 	double *RadialProfilesTime  = 0;
@@ -1789,7 +1790,7 @@ double montecarlo(int argc, char **argv)
 			                       readFileColumn( optarg, data_growthcurve.s, 2);
 		   for( int j=0; j<data_growthcurve.dim; j++){
 			   data_growthcurve.x[j] *= 24.;
-			   maxRadius = max<double>( maxRadius, data_growthcurve.m[j] + data_growthcurve.s[j]*2);
+			   maxRadius = max<double>( maxRadius, data_growthcurve.m[j] + data_growthcurve.s[j]*1);
 		   }
 		   //fprintf(stderr, "(( max radius = %e ))\n", maxRadius);
 
@@ -1887,6 +1888,8 @@ double montecarlo(int argc, char **argv)
 				VoronoiCell::USE_MORPHOGEN = true;
 			} else if (strstr(optarg, "MaxGlucoseConsumption") != 0) {
 				Agent::NICK_G_MAX = value * 1e-17;
+			} else if (strstr(optarg, "PovrayOutput") != 0) {
+				PovrayOutput = true;
 			} else if (strstr(optarg, "NoSliceOutput") != 0) {
 				NoSliceOutput = true;
 			} else if (strstr(optarg, "NoRadialProfiles") != 0) {
@@ -5334,7 +5337,7 @@ double montecarlo(int argc, char **argv)
 
 
 			if(!NoRadialProfiles ||
-					( RadialProfilesCount && inbound<double>( RadialProfilesTime, floor(Last_Time/24.), floor(Time/24.), 1) ) ){
+					( RadialProfilesCount && inbound<double>( RadialProfilesTime, floor(Last_Time/24.), floor(Time/24.), RadialProfilesCount, 1) ) ){
 
 				// UPDATE
 				if( ceil(Last_Time/1) != ceil(Time/1)){
@@ -5346,7 +5349,7 @@ double montecarlo(int argc, char **argv)
 
 				//***if( ceil(Last_Time/24.) != ceil(Time/24.))
 				for( int day=(int)ceil(Last_Time/24.); day < (int)ceil(Time/24.); day++ )
-				if(	inbound<double>( RadialProfilesTime, day-1, day-1, 1 ))
+				if(	inbound<double>( RadialProfilesTime, day-1, day-1, RadialProfilesCount, 1))
 				{
 					// data_KI67
 					if(true && data_KI67.dim){
@@ -5407,7 +5410,9 @@ double montecarlo(int argc, char **argv)
 					//fprintf(stderr, "[Print Cells to Povray File]\n");
 					//***sprintf(outfilename, "%s/rel%i.radialProfiles_day%i-%i.pov", dirname, k, (int)floor(Last_Time/24.), (int)ceil(Last_Time/24.));
 					sprintf(outfilename, "%s/rel%i.radialProfiles_day%i-%i.pov", dirname, k, day-1, day);
-					//agentArray->printToPovray(outfilename, voronoiDiagram);
+
+					if(PovrayOutput)
+						agentArray->printToPovray(outfilename, voronoiDiagram);
 					//fprintf(stderr, "[Wrote Povray File]\n");
 					char filename2[512];
 					sprintf(filename2, "%s.dat", outfilename);
@@ -5670,8 +5675,8 @@ double montecarlo(int argc, char **argv)
 					return maxEpsilon;
 				}*/
 
-				//if( data_growthcurve.dim && maxRadius < sqrt(gyrRadius) * AGENT_DIAMETER * 0.8)
-				//	return maxEpsilon;
+				if( data_growthcurve.dim && maxRadius < sqrt(gyrRadius) * AGENT_DIAMETER * 0.8)
+					return maxEpsilon;
 
 				global_gyrRadius[l] += sqrt(gyrRadius);
 
