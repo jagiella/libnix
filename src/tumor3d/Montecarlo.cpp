@@ -1756,8 +1756,12 @@ double montecarlo(int argc, char **argv)
 
 	// DATA
 	comparison_t data_growthcurve = create_comparison();
-	comparison_t data_KI67 = create_comparison();
-	comparison_t data_ECM  = create_comparison();
+	comparison_t data_KI67_17 = create_comparison();
+	comparison_t data_ECM_17  = create_comparison();
+	comparison_t data_TUNEL_17= create_comparison();
+	comparison_t data_KI67_24 = create_comparison();
+	comparison_t data_ECM_24  = create_comparison();
+	comparison_t data_TUNEL_24= create_comparison();
 	//comparison_t sim_growthcurve = create_comparison();
 	//sim_growthcurve.x = (double*) malloc( sizeof(double) * 1000);
 	//sim_growthcurve.m = (double*) malloc( sizeof(double) * 1000);
@@ -1769,6 +1773,7 @@ double montecarlo(int argc, char **argv)
 	double measurement_error_gc   = 0;
 	double measurement_error_ki67 = 0;
 	double measurement_error_ecm  = 0;
+	double measurement_error_TUNEL= 0;
 	{FILE *fp_raw = fopen( "raw_gc.dat", "w"); fprintf(fp_raw, ""); fclose(fp_raw); }
 	//{FILE *fp_raw = fopen( "raw_ki67.dat", "w"); fprintf(fp_raw, ""); fclose(fp_raw); }
 
@@ -1778,7 +1783,7 @@ double montecarlo(int argc, char **argv)
 			getopt(
 					argc,
 					argv,
-					"1:2:3:4:5:R:a:b:c:d:e:f:g:i:jo:l:n:M:m:p:s:v:F:t:k:x:y:r:w:z:Z:D:A:NE:B:I:J:K:C:L:S:M:G:O:V:P:Y:W:h"))
+					"1:2:3:4:5:6:7:8:9:R:a:b:c:d:e:f:g:i:jo:l:n:M:m:p:s:v:F:t:k:x:y:r:w:z:Z:D:A:NE:B:I:J:K:C:L:S:M:G:O:V:P:Y:W:h"))
 			!= EOF) {
 		switch (c) {
 
@@ -1799,27 +1804,57 @@ double montecarlo(int argc, char **argv)
 		case '2': {
 			// Read Proliferation Profile Data
 			   //fprintf( stderr, "Read data from %s\n", optarg) ;
-			   data_KI67.dim = readFileColumn( optarg, data_KI67.x, 0);
-			   				   readFileColumn( optarg, data_KI67.m, 1);
-			   				   readFileColumn( optarg, data_KI67.s, 2);
+			   data_KI67_17.dim = readFileColumn( optarg, data_KI67_17.x, 0);
+			   				      readFileColumn( optarg, data_KI67_17.m, 1);
+			   				      readFileColumn( optarg, data_KI67_17.s, 2);
+		} break;
 
+		case '3': {
+			// Read Proliferation Profile Data
+			   //fprintf( stderr, "Read data from %s\n", optarg) ;
+			   data_ECM_17.dim = readFileColumn( optarg, data_ECM_17.x, 0);
+			   				     readFileColumn( optarg, data_ECM_17.m, 1);
+			   				     readFileColumn( optarg, data_ECM_17.s, 2);
 		} break;
 
 		case '4': {
 			// Read Proliferation Profile Data
 			   //fprintf( stderr, "Read data from %s\n", optarg) ;
-			   data_ECM.dim = readFileColumn( optarg, data_ECM.x, 0);
-			   				  readFileColumn( optarg, data_ECM.m, 1);
-			   				  readFileColumn( optarg, data_ECM.s, 2);
-
+			   data_TUNEL_17.dim = readFileColumn( optarg, data_TUNEL_17.x, 0);
+			   				       readFileColumn( optarg, data_TUNEL_17.m, 1);
+			   				       readFileColumn( optarg, data_TUNEL_17.s, 2);
 		} break;
 
-		case '3': {
+		case '5': {
+			// Read Proliferation Profile Data
+			   //fprintf( stderr, "Read data from %s\n", optarg) ;
+			   data_KI67_24.dim = readFileColumn( optarg, data_KI67_24.x, 0);
+			   				      readFileColumn( optarg, data_KI67_24.m, 1);
+			   				      readFileColumn( optarg, data_KI67_24.s, 2);
+		} break;
+
+		case '6': {
+			// Read Proliferation Profile Data
+			   //fprintf( stderr, "Read data from %s\n", optarg) ;
+			   data_ECM_24.dim = readFileColumn( optarg, data_ECM_24.x, 0);
+			   				     readFileColumn( optarg, data_ECM_24.m, 1);
+			   				     readFileColumn( optarg, data_ECM_24.s, 2);
+		} break;
+
+		case '7': {
+			// Read Proliferation Profile Data
+			   //fprintf( stderr, "Read data from %s\n", optarg) ;
+			   data_TUNEL_24.dim = readFileColumn( optarg, data_TUNEL_24.x, 0);
+			   				       readFileColumn( optarg, data_TUNEL_24.m, 1);
+			   				       readFileColumn( optarg, data_TUNEL_24.s, 2);
+		} break;
+
+		case '8': {
 			maxEpsilon = atof( optarg);
 			//fprintf( stderr, "Pass epsilon limit %e\n", maxEpsilon) ;
 		} break;
 
-		case '5': {
+		case '9': {
 			measurement_error = atof( optarg);
 			//fprintf( stderr, "Pass epsilon limit %e\n", maxEpsilon) ;
 		} break;
@@ -2098,14 +2133,20 @@ double montecarlo(int argc, char **argv)
 	measurement_error_gc *= measurement_error;
 
 	measurement_error_ki67 = 0;
-	for( int j=0; j<data_KI67.dim; j++)
-		measurement_error_ki67 = max<double>( measurement_error_ki67, data_KI67.m[j]);
+	for( int j=0; j<data_KI67_17.dim; j++)
+		measurement_error_ki67 = max<double>( measurement_error_ki67, data_KI67_17.m[j]);
 	measurement_error_ki67 *= measurement_error;
 
 	measurement_error_ecm = 0;
-	for( int j=0; j<data_ECM.dim; j++)
-		measurement_error_ecm = max<double>( measurement_error_ecm, data_ECM.m[j]);
+	for( int j=0; j<data_ECM_17.dim; j++)
+		measurement_error_ecm = max<double>( measurement_error_ecm, data_ECM_17.m[j]);
 	measurement_error_ecm *= measurement_error;
+
+	measurement_error_TUNEL = 0;
+	for( int j=0; j<data_TUNEL_17.dim; j++)
+		measurement_error_TUNEL = max<double>( measurement_error_TUNEL, data_TUNEL_17.m[j]);
+	measurement_error_TUNEL *= measurement_error;
+
 
 	// READ DATA
 
@@ -5352,9 +5393,15 @@ double montecarlo(int argc, char **argv)
 				if(	inbound<double>( RadialProfilesTime, day-1, day-1, RadialProfilesCount, 1))
 				{
 					// data_KI67
-					if(true && data_KI67.dim){
+					comparison_t *data_KI67;
+					switch( (int)ceil(Last_Time/24.)){
+					case 17: data_KI67 = &data_KI67_17; break;
+					case 24: data_KI67 = &data_KI67_24; break;
+					}
+
+					if(true && data_KI67->dim){
 						comparison_t sim_KI67 = create_comparison();
-						sim_KI67.dim = (int) ceil( max( data_KI67.x, data_KI67.dim) );
+						sim_KI67.dim = (int) ceil( max( data_KI67->x, data_KI67->dim) );
 						sim_KI67.x = (double*) malloc( sizeof(double) * sim_KI67.dim);
 						sim_KI67.m = (double*) malloc( sizeof(double) * sim_KI67.dim);
 						FILE *fp_raw = fopen( "raw_ki67.dat", "w");
@@ -5362,11 +5409,11 @@ double montecarlo(int argc, char **argv)
 							sim_KI67.x[j] = j;
 							sim_KI67.m[j] = ( histogram[j] - histogramFree[j]>0 ? (double) histogramDividing[j] / (double) (histogram[j] - histogramFree[j]) : 0);
 							sim_KI67.m[j] = max( 0.,  sim_KI67.m[j] + measurement_error_ki67*normrnd());
-							fprintf( fp_raw, "%e %e %e %e\n", data_KI67.x[j], sim_KI67.m[j], data_KI67.m[j], data_KI67.s[j]);
+							fprintf( fp_raw, "%e %e %e %e\n", data_KI67->x[j], sim_KI67.m[j], data_KI67->m[j], data_KI67->s[j]);
 						}
 						fclose(fp_raw);
 
-						cumEpsilon += compare( data_KI67, sim_KI67, mean_vs_mean) / data_KI67.dim;
+						cumEpsilon += compare( *data_KI67, sim_KI67, mean_vs_mean) / data_KI67->dim;
 						//fprintf(stderr, "<< %e >>\n", cumEpsilon);
 						if( isnan(cumEpsilon)){
 							fprintf(stderr, "{data_KI67}!\n"); exit(0);
@@ -5377,11 +5424,16 @@ double montecarlo(int argc, char **argv)
 					}
 
 					// data_ECM
-					if(true && data_ECM.dim){
+					comparison_t *data_ECM;
+					switch( (int)ceil(Last_Time/24.)){
+					case 17: data_ECM = &data_ECM_17; break;
+					case 24: data_ECM = &data_ECM_24; break;
+					}
+					if(true && data_ECM->dim){
 						comparison_t sim_ECM = create_comparison();
-						sim_ECM.dim = (int) ceil( max( data_ECM.x, data_ECM.dim) );
-						sim_ECM.x = (double*) malloc( sizeof(double) * data_ECM.dim);
-						sim_ECM.m = (double*) malloc( sizeof(double) * data_ECM.dim);
+						sim_ECM.dim = (int) ceil( max( data_ECM->x, data_ECM->dim) );
+						sim_ECM.x = (double*) malloc( sizeof(double) * data_ECM->dim);
+						sim_ECM.m = (double*) malloc( sizeof(double) * data_ECM->dim);
 						FILE *fp_raw = fopen( "raw_ecm.dat", "w");
 						for( int j=0; j<sim_ECM.dim; j++){
 							sim_ECM.x[j] = j;
@@ -5390,15 +5442,46 @@ double montecarlo(int argc, char **argv)
 							else
 								sim_ECM.m[j] = 0;
 							sim_ECM.m[j] = max( 0.,  sim_ECM.m[j] + measurement_error_ecm*normrnd());
-							fprintf( fp_raw, "%e %e %e %e\n", data_ECM.x[j], sim_ECM.m[j], data_ECM.m[j], data_ECM.s[j]);
+							fprintf( fp_raw, "%e %e %e %e\n", data_ECM->x[j], sim_ECM.m[j], data_ECM->m[j], data_ECM->s[j]);
 						}
 						fclose(fp_raw);
 
-						cumEpsilon += compare( data_ECM, sim_ECM, mean_vs_mean) / data_ECM.dim;
+						cumEpsilon += compare( *data_ECM, sim_ECM, mean_vs_mean) / data_ECM->dim;
 						//fprintf(stderr, "<< %e >>\n", cumEpsilon);
 
 						if( isnan(cumEpsilon)){
 							fprintf(stderr, "{data_ECM}!\n"); exit(0);
+						}
+
+						if( cumEpsilon > maxEpsilon)
+							return cumEpsilon;
+					}
+
+					// data_TUNEL
+					comparison_t *data_TUNEL;
+					switch( (int)ceil(Last_Time/24.)){
+					case 17: data_TUNEL = &data_TUNEL_17; break;
+					case 24: data_TUNEL = &data_TUNEL_24; break;
+					}
+					if(true && data_TUNEL->dim){
+						comparison_t sim_TUNEL = create_comparison();
+						sim_TUNEL.dim = (int) ceil( max( data_TUNEL->x, data_TUNEL->dim) );
+						sim_TUNEL.x = (double*) malloc( sizeof(double) * data_TUNEL->dim);
+						sim_TUNEL.m = (double*) malloc( sizeof(double) * data_TUNEL->dim);
+						FILE *fp_raw = fopen( "raw_TUNEL.dat", "w");
+						for( int j=0; j<sim_TUNEL.dim; j++){
+							sim_TUNEL.x[j] = j;
+							sim_TUNEL.m[j] = ( histogram[j] - histogramFree[j]>0 ? (double) histogramNecrotic[j] / (double) (histogram[j] - histogramFree[j]) : 0);
+							sim_TUNEL.m[j] = max( 0.,  sim_TUNEL.m[j] + measurement_error_TUNEL*normrnd());
+							fprintf( fp_raw, "%e %e %e %e\n", data_TUNEL->x[j], sim_TUNEL.m[j], data_TUNEL->m[j], data_TUNEL->s[j]);
+						}
+						fclose(fp_raw);
+
+						cumEpsilon += compare( *data_TUNEL, sim_TUNEL, mean_vs_mean) / data_TUNEL->dim;
+						//fprintf(stderr, "<< %e >>\n", cumEpsilon);
+
+						if( isnan(cumEpsilon)){
+							fprintf(stderr, "{data_TUNEL}!\n"); exit(0);
 						}
 
 						if( cumEpsilon > maxEpsilon)
@@ -5516,7 +5599,7 @@ double montecarlo(int argc, char **argv)
 				for (l = indexOfTime( Last_Time, BeginningTime, OutputRate) + 1;
 						l < indexOfTime( Time, BeginningTime, OutputRate);
 						l++) {
-
+					fprintf( stderr, "fill\n");
 					//global_prob[t][c]
 #if PROB_OUTPUT
 					if(Last_NumberOfCells<MaxCells)
@@ -5860,6 +5943,7 @@ double montecarlo(int argc, char **argv)
 
 				}*/
 
+				fprintf( stderr, "outut!\n");
 				sprintf(outfilename, "%s/dataOnTheFly.dat", dirname);
 				if ((fp = fopen(outfilename, "a+")) == NULL) {
 					fprintf(stderr, "Error opening file %s for writing!\n",
@@ -5948,6 +6032,7 @@ double montecarlo(int argc, char **argv)
 */
 		} while (Time < EndTime && actionList->size != 0);
 
+		fprintf( stderr, "Simulation finished!\n");
 
 		// RADIAL PROFILE AVERAGING
 		if(!NoRadialProfiles){

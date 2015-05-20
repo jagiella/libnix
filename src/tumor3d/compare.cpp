@@ -76,14 +76,18 @@ int main( int argc, char **argv)
 	int n = 1;
 	int parc = 0;
 	char **parv = 0;
-	char simdir[512];
+	char simdir[512], oxygen[512], glucose[512];
+
+	sprintf( oxygen,  "0.28");
+	sprintf( glucose, "25");
+
 	pid_t pid = getpid();
 	struct utsname unameData;
 	uname(&unameData); // Might check return value here (non-0 = failure)
 	//printf("%s", unameData.nodename);
-
 	sprintf( simdir, "%s_PID%i", unameData.nodename, pid); //fprintf( stderr, "[OUTPUTDIR: %s]\n", simdir);
 	bool remove_simulation_directory = true;
+
 
 	char option[512];
 	addOption( parc, parv, "nix-tumor3d");
@@ -91,10 +95,19 @@ int main( int argc, char **argv)
 	addOption( parc, parv, "-y500");
 	addOption( parc, parv, "-RNoRadialProfiles");
 	addOption( parc, parv, "-RRadialProfilesTime17");
+	addOption( parc, parv, "-RRadialProfilesTime24");
 	addOption( parc, parv, "-RNoSliceOutput");
 	addOption( parc, parv, "-k10");
+	//addOption( parc, parv, "-RSymbolicExtendedNeighborhood");
 	addOption( parc, parv, "-RExponentialReentranceProbability");
+	//addOption( parc, parv, "-m0");
 	addOption( parc, parv, "-M10");
+	//addOption( parc, parv, "-t1");
+	//addOption( parc, parv, "-Rapt0.");
+
+
+
+
 	srand (time(NULL));
 	sprintf( option, "-s%i", rand() % 1000);
 	addOption( parc, parv, option);
@@ -118,27 +131,44 @@ int main( int argc, char **argv)
 
 	int par_count=0;
 	for( int i=1; i<argc; i++){
-		if( argv[i][0] == '-' && argv[i][1] == 'm'){
-			sprintf( option, "-5%e", atof( &argv[i][2]));
-			addOption( parc, parv, option);
-		}else if( argv[i][0] == '-' && argv[i][1] == 'e'){
-			sprintf( option, "-3%e", atof( &argv[i][2]));
-			addOption( parc, parv, option);
-		}else if( argv[i][0] == '-' && argv[i][1] == 'g'){
+		if(       argv[i][0] == '-' && argv[i][1] == 'g'){ // growth curves
 			sprintf( option, "-1%s", &argv[i][2]);
 			addOption( parc, parv, option);
-		}else if( argv[i][0] == '-' && argv[i][1] == 'k'){
+		}else if( argv[i][0] == '-' && argv[i][1] == 'k'){ // KI67  (17days)
 			sprintf( option, "-2%s", &argv[i][2]);
 			addOption( parc, parv, option);
-		}else if( argv[i][0] == '-' && argv[i][1] == 'E'){
-			sprintf( option, "-4%s", &argv[i][2]);
+		}else if( argv[i][0] == '-' && argv[i][1] == 'e'){ // ECM   (17days)
+			sprintf( option, "-3%e", atof( &argv[i][2]));
 			addOption( parc, parv, option);
-		}else if( argv[i][0] == '-' && argv[i][1] == 'd'){
+		}else if( argv[i][0] == '-' && argv[i][1] == 't'){ // TUNEL (17days)
+			sprintf( option, "-4%e", atof( &argv[i][2]));
+			addOption( parc, parv, option);
+		}else if( argv[i][0] == '-' && argv[i][1] == 'K'){ // KI67  (24days)
+			sprintf( option, "-5%s", &argv[i][2]);
+			addOption( parc, parv, option);
+		}else if( argv[i][0] == '-' && argv[i][1] == 'E'){ // ECM   (24days)
+			sprintf( option, "-6%e", atof( &argv[i][2]));
+			addOption( parc, parv, option);
+		}else if( argv[i][0] == '-' && argv[i][1] == 'T'){ // TUNEL (24days)
+			sprintf( option, "-7%e", atof( &argv[i][2]));
+			addOption( parc, parv, option);
+		}else if( argv[i][0] == '-' && argv[i][1] == 'l'){ // likelihood threshold
+			sprintf( option, "-8%s", &argv[i][2]);
+			addOption( parc, parv, option);
+		}else if( argv[i][0] == '-' && argv[i][1] == 'm'){ // measurement error
+			sprintf( option, "-9%e", atof( &argv[i][2]));
+			addOption( parc, parv, option);
+		}else if( argv[i][0] == '-' && argv[i][1] == 'O'){ // oxygen
+			sprintf( oxygen, &argv[i][2]);
+		}else if( argv[i][0] == '-' && argv[i][1] == 'G'){ // glucose
+			sprintf( glucose, &argv[i][2]);
+		}else if( argv[i][0] == '-' && argv[i][1] == 'd'){ // output directory
 			sprintf( simdir, "%s", &argv[i][2]);
 			remove_simulation_directory = false;
-			addOption( parc, parv, option);
+			//addOption( parc, parv, option);
 		}else{
 			switch(par_count){
+			// reduced model
 			case 0: sprintf( option, "-v%s", argv[i]); break;
 			case 1: sprintf( option, "-RReentranceProbabilityLength%s", argv[i]); break;
 			case 2: sprintf( option, "-RInitialRadius%s", argv[i]); break;
@@ -146,6 +176,24 @@ int main( int argc, char **argv)
 			case 4: sprintf( option, "-RECMProductionRate%s", argv[i]); break;
 			case 5: sprintf( option, "-RECMDegradationRate%s", argv[i]); break;
 			case 6: sprintf( option, "-RECMThresholdQuiescence%s", argv[i]); break;
+
+			// full model
+			case 7: sprintf( option, "-Rre%s", argv[i]); break;
+			case 8: sprintf( option, "-Rnec%s", argv[i]); break;
+			case 9: sprintf( option, "-Rlys%s", argv[i]); break;
+
+			case 10: sprintf( option, "-RATPThresholdQuiescence%s", argv[i]); break;
+			case 11: sprintf( option, "-RATPThresholdDeath%s", argv[i]); break;
+
+			case 12: sprintf( option, "-RLactateThresholdQuiescence%s", argv[i]); addOption( parc, parv, "-RLactate"); break;
+			case 13: sprintf( option, "-RLactateThresholdDeath%s", argv[i]); break;
+
+			case 14: sprintf( option, "-RWasteDiffusion%s", argv[i]); addOption( parc, parv, "-RWaste"); break;
+			case 15: sprintf( option, "-RWasteUptake%s", argv[i]); break;
+			case 16: sprintf( option, "-RWasteThresholdSlowedGrowth%s", argv[i]); break;
+			case 17: sprintf( option, "-RWasteIntoxicatedCellCycles%s", argv[i]); break;
+
+
 			}
 			addOption( parc, parv, option);
 			par_count++;
@@ -153,8 +201,9 @@ int main( int argc, char **argv)
 		}
 	}
 
-	sprintf( option, "-d%s", simdir);
-	addOption( parc, parv, option);
+	sprintf( option, "-O%s", oxygen);  addOption( parc, parv, option);
+	sprintf( option, "-G%s", glucose); addOption( parc, parv, option);
+	sprintf( option, "-d%s", simdir);  addOption( parc, parv, option);
 
 
 	//fprintf(stderr, " parc = %i\n", parc);

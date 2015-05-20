@@ -3478,6 +3478,7 @@ void initVoronoiCell( VoronoiCell *vc)
 
 	vc->lactate=0;
 	vc->morphogen=0;
+	vc->waste=0;
 
 	vc->CPT11in=0;
 	vc->CPT11out=0;
