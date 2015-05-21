@@ -92,7 +92,7 @@ int main( int argc, char **argv)
 	char option[512];
 	addOption( parc, parv, "nix-tumor3d");
 	addOption( parc, parv, "-x1");
-	addOption( parc, parv, "-y500");
+	addOption( parc, parv, "-y1000");
 	addOption( parc, parv, "-RNoRadialProfiles");
 	addOption( parc, parv, "-RRadialProfilesTime17");
 	addOption( parc, parv, "-RRadialProfilesTime24");
