@@ -85,7 +85,7 @@ extern double *exactSolution;
 
 SparseMatrix* SparseMatrix::newSparseMatrix( int dimI, int dimJ)
 {
-	fprintf( stderr, "SparseMatrix::newSparseMatrix()\n");
+	//fprintf( stderr, "SparseMatrix::newSparseMatrix()\n");
 
 	SparseMatrix *newMatrix = (SparseMatrix*) malloc( sizeof(SparseMatrix));
 

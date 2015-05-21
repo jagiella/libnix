@@ -98,12 +98,12 @@ int main( int argc, char **argv)
 	addOption( parc, parv, "-RRadialProfilesTime24");
 	addOption( parc, parv, "-RNoSliceOutput");
 	addOption( parc, parv, "-k10");
-	//addOption( parc, parv, "-RSymbolicExtendedNeighborhood");
+	addOption( parc, parv, "-RSymbolicExtendedNeighborhood");
 	addOption( parc, parv, "-RExponentialReentranceProbability");
-	//addOption( parc, parv, "-m0");
+	addOption( parc, parv, "-m0");
 	addOption( parc, parv, "-M10");
-	//addOption( parc, parv, "-t1");
-	//addOption( parc, parv, "-Rapt0.");
+	addOption( parc, parv, "-t1");
+	addOption( parc, parv, "-Rapt0.");
 
 
 
@@ -138,25 +138,25 @@ int main( int argc, char **argv)
 			sprintf( option, "-2%s", &argv[i][2]);
 			addOption( parc, parv, option);
 		}else if( argv[i][0] == '-' && argv[i][1] == 'e'){ // ECM   (17days)
-			sprintf( option, "-3%e", atof( &argv[i][2]));
+			sprintf( option, "-3%s", &argv[i][2]);
 			addOption( parc, parv, option);
 		}else if( argv[i][0] == '-' && argv[i][1] == 't'){ // TUNEL (17days)
-			sprintf( option, "-4%e", atof( &argv[i][2]));
+			sprintf( option, "-4%s", &argv[i][2]);
 			addOption( parc, parv, option);
 		}else if( argv[i][0] == '-' && argv[i][1] == 'K'){ // KI67  (24days)
 			sprintf( option, "-5%s", &argv[i][2]);
 			addOption( parc, parv, option);
 		}else if( argv[i][0] == '-' && argv[i][1] == 'E'){ // ECM   (24days)
-			sprintf( option, "-6%e", atof( &argv[i][2]));
+			sprintf( option, "-6%s", &argv[i][2]);
 			addOption( parc, parv, option);
 		}else if( argv[i][0] == '-' && argv[i][1] == 'T'){ // TUNEL (24days)
-			sprintf( option, "-7%e", atof( &argv[i][2]));
+			sprintf( option, "-7%s", &argv[i][2]);
 			addOption( parc, parv, option);
 		}else if( argv[i][0] == '-' && argv[i][1] == 'l'){ // likelihood threshold
 			sprintf( option, "-8%s", &argv[i][2]);
 			addOption( parc, parv, option);
 		}else if( argv[i][0] == '-' && argv[i][1] == 'm'){ // measurement error
-			sprintf( option, "-9%e", atof( &argv[i][2]));
+			sprintf( option, "-9%s", &argv[i][2]);
 			addOption( parc, parv, option);
 		}else if( argv[i][0] == '-' && argv[i][1] == 'O'){ // oxygen
 			sprintf( oxygen, &argv[i][2]);
@@ -201,6 +201,7 @@ int main( int argc, char **argv)
 		}
 	}
 
+	addOption( parc, parv, "-C2");
 	sprintf( option, "-O%s", oxygen);  addOption( parc, parv, option);
 	sprintf( option, "-G%s", glucose); addOption( parc, parv, option);
 	sprintf( option, "-d%s", simdir);  addOption( parc, parv, option);

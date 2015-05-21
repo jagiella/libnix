@@ -945,6 +945,8 @@ double getGyrationRadius(AgentList *agentList) {
 }
 
 double getGyrationRadiusOfBorder(AgentList *agentList, VoronoiDiagram *vd) {
+
+	//fprintf( stderr, "Gyr Rad\n");
 	/*int max_queueSize = agentList->countActiveAgents*MAX_SUBCELLULAR_COMPONENTS;
 	 int queueSize = 0;
 	 VoronoiCell **queue = (VoronoiCell**) calloc( max_queueSize, sizeof(VoronoiCell*));
@@ -1127,6 +1129,9 @@ double getGyrationRadiusOfBorder(AgentList *agentList, VoronoiDiagram *vd) {
 	//fprintf( stderr, "radius of gyration: %lf\n", gyrRadius);		
 
 	free(border);
+
+	//fprintf( stderr, "Gyr Rad End\n");
+
 
 	return gyrRadius;
 	return 0.;
@@ -1819,7 +1824,7 @@ double montecarlo(int argc, char **argv)
 
 		case '4': {
 			// Read Proliferation Profile Data
-			   //fprintf( stderr, "Read data from %s\n", optarg) ;
+			   fprintf( stderr, "Read data from %s\n", optarg) ;
 			   data_TUNEL_17.dim = readFileColumn( optarg, data_TUNEL_17.x, 0);
 			   				       readFileColumn( optarg, data_TUNEL_17.m, 1);
 			   				       readFileColumn( optarg, data_TUNEL_17.s, 2);
@@ -4797,6 +4802,8 @@ double montecarlo(int argc, char **argv)
 				// correct time
 				Time = EndTime;
 			}
+			//fprintf( stderr, "Finished Selected Action\n");
+
 
 			//if( Last_Time + 24 < Time){
 			//	fprintf( stderr, "Last_Time = %lf, Time = %lf\n", Last_Time, Time);
@@ -5308,6 +5315,9 @@ double montecarlo(int argc, char **argv)
 			// CONTINUUM MODEL (ECM)
 			if (VoronoiCell::ECM_THRESHOLD_QUIESCENCE != 0) {
 
+				fprintf( stderr, "CONTINUUM MODEL (ECM)\n");
+
+
 				//double ECM_PRODUCTION_RATE = 0.0005; // 0.0003;
 				//double ECM_DEGRADATION = ECM_PRODUCTION_RATE / 0.15;
 				double TimeStep = 0.01;
@@ -5371,6 +5381,8 @@ double montecarlo(int argc, char **argv)
 						voronoiDiagram->voronoiCells[v]->ecm += dECM[v];
 					}
 				}
+
+				fprintf( stderr, "CONTINUUM MODEL (ECM) finished\n");
 			}
 			//flag_actualizeProcessRates = TRUE;
 
@@ -5380,6 +5392,7 @@ double montecarlo(int argc, char **argv)
 			if(!NoRadialProfiles ||
 					( RadialProfilesCount && inbound<double>( RadialProfilesTime, floor(Last_Time/24.), floor(Time/24.), RadialProfilesCount, 1) ) ){
 
+				//fprintf( stderr, "Radial Profile\n");
 				// UPDATE
 				if( ceil(Last_Time/1) != ceil(Time/1)){
 					//***for( int hour=(int)ceil(Last_Time/1.); hour < (int)ceil(Time/1.); hour++ )
@@ -5392,14 +5405,18 @@ double montecarlo(int argc, char **argv)
 				for( int day=(int)ceil(Last_Time/24.); day < (int)ceil(Time/24.); day++ )
 				if(	inbound<double>( RadialProfilesTime, day-1, day-1, RadialProfilesCount, 1))
 				{
+					//fprintf(stderr, "[Compare to Data: %i]\n", (int)ceil(Last_Time/24.));
+
 					// data_KI67
 					comparison_t *data_KI67;
-					switch( (int)ceil(Last_Time/24.)){
+					switch( day-1){
 					case 17: data_KI67 = &data_KI67_17; break;
 					case 24: data_KI67 = &data_KI67_24; break;
 					}
 
 					if(true && data_KI67->dim){
+						//fprintf(stderr, "[Compare to KI67 Data]\n");
+
 						comparison_t sim_KI67 = create_comparison();
 						sim_KI67.dim = (int) ceil( max( data_KI67->x, data_KI67->dim) );
 						sim_KI67.x = (double*) malloc( sizeof(double) * sim_KI67.dim);
@@ -5421,11 +5438,12 @@ double montecarlo(int argc, char **argv)
 
 						if( cumEpsilon > maxEpsilon)
 							return cumEpsilon;
+						//fprintf(stderr, "[Compared to KI67 data]\n");
 					}
 
 					// data_ECM
 					comparison_t *data_ECM;
-					switch( (int)ceil(Last_Time/24.)){
+					switch( day-1){
 					case 17: data_ECM = &data_ECM_17; break;
 					case 24: data_ECM = &data_ECM_24; break;
 					}
@@ -5455,11 +5473,12 @@ double montecarlo(int argc, char **argv)
 
 						if( cumEpsilon > maxEpsilon)
 							return cumEpsilon;
+						//fprintf(stderr, "[Compared to ECM data]\n");
 					}
 
 					// data_TUNEL
 					comparison_t *data_TUNEL;
-					switch( (int)ceil(Last_Time/24.)){
+					switch( day-1){
 					case 17: data_TUNEL = &data_TUNEL_17; break;
 					case 24: data_TUNEL = &data_TUNEL_24; break;
 					}
@@ -5486,6 +5505,7 @@ double montecarlo(int argc, char **argv)
 
 						if( cumEpsilon > maxEpsilon)
 							return cumEpsilon;
+						//fprintf(stderr, "[Compared to TUNEL data]\n");
 					}
 
 
@@ -5519,7 +5539,7 @@ double montecarlo(int argc, char **argv)
 							//fprintf(fs, "%i %i %i\n", i, histogram[i],histogramDividing[i]);
 						}
 					fclose(fp);
-					//fprintf(stderr, "[Wrote Radial Profile]\n");
+					fprintf(stderr, "[Wrote Radial Profile]\n");
 
 					// RESET
 					for( int i=0; i<10000; i++){
@@ -5529,9 +5549,9 @@ double montecarlo(int argc, char **argv)
 						histogramFree[i]=0;
 						histogramECM[i]=0;
 					}
-					//fprintf(stderr, "[Reset History]\n");
+					fprintf(stderr, "[Reset History]\n");
 				}
-
+				fprintf( stderr, "Radial Profile finished\n");
 			}
 
 
@@ -5599,7 +5619,7 @@ double montecarlo(int argc, char **argv)
 				for (l = indexOfTime( Last_Time, BeginningTime, OutputRate) + 1;
 						l < indexOfTime( Time, BeginningTime, OutputRate);
 						l++) {
-					fprintf( stderr, "fill\n");
+					//fprintf( stderr, "fill\n");
 					//global_prob[t][c]
 #if PROB_OUTPUT
 					if(Last_NumberOfCells<MaxCells)
@@ -5943,7 +5963,7 @@ double montecarlo(int argc, char **argv)
 
 				}*/
 
-				fprintf( stderr, "outut!\n");
+				//fprintf( stderr, "outut!\n");
 				sprintf(outfilename, "%s/dataOnTheFly.dat", dirname);
 				if ((fp = fopen(outfilename, "a+")) == NULL) {
 					fprintf(stderr, "Error opening file %s for writing!\n",
