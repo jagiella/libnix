@@ -60,7 +60,7 @@ int readFileColumn( const char* filename, double *&col, int icol)
 	char buffer[1024], *ptr;
 
 	while( fgets( buffer, 1024, fp ))
-	if(buffer[0] != '#'){
+	if(buffer[0] != '#' && buffer[0] != '\n'){
 		ptr = buffer;
 		nrow++;
 

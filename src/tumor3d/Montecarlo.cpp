@@ -5315,7 +5315,7 @@ double montecarlo(int argc, char **argv)
 			// CONTINUUM MODEL (ECM)
 			if (VoronoiCell::ECM_THRESHOLD_QUIESCENCE != 0) {
 
-				fprintf( stderr, "CONTINUUM MODEL (ECM)\n");
+				//fprintf( stderr, "CONTINUUM MODEL (ECM)\n");
 
 
 				//double ECM_PRODUCTION_RATE = 0.0005; // 0.0003;
@@ -5382,7 +5382,7 @@ double montecarlo(int argc, char **argv)
 					}
 				}
 
-				fprintf( stderr, "CONTINUUM MODEL (ECM) finished\n");
+				//fprintf( stderr, "CONTINUUM MODEL (ECM) finished\n");
 			}
 			//flag_actualizeProcessRates = TRUE;
 
@@ -5437,7 +5437,7 @@ double montecarlo(int argc, char **argv)
 						}
 
 						if( cumEpsilon > maxEpsilon)
-							return cumEpsilon;
+							{fprintf(stderr, "break ki67 %i!\n", day-1);	return cumEpsilon;}
 						//fprintf(stderr, "[Compared to KI67 data]\n");
 					}
 
@@ -5472,7 +5472,7 @@ double montecarlo(int argc, char **argv)
 						}
 
 						if( cumEpsilon > maxEpsilon)
-							return cumEpsilon;
+							{fprintf(stderr, "break ecm %i!\n", day-1);	return cumEpsilon;}
 						//fprintf(stderr, "[Compared to ECM data]\n");
 					}
 
@@ -5504,7 +5504,8 @@ double montecarlo(int argc, char **argv)
 						}
 
 						if( cumEpsilon > maxEpsilon)
-							return cumEpsilon;
+							{fprintf(stderr, "break tunel %i!\n", day-1);	return cumEpsilon;}
+
 						//fprintf(stderr, "[Compared to TUNEL data]\n");
 					}
 
@@ -5568,7 +5569,7 @@ double montecarlo(int argc, char **argv)
 						data_growthcurve.m[idxEpsilon] = max( 0.,  data_growthcurve.m[idxEpsilon] + measurement_error_gc*normrnd());
 
 						cumEpsilon += 0.5 * pow( (data_growthcurve.m[idxEpsilon] - radius)/data_growthcurve.s[idxEpsilon], 2)  / data_growthcurve.dim;
-						//fprintf(stderr, "[[ %e ]]\n", cumEpsilon);
+						fprintf(stderr, "[[ %e ]]\n", cumEpsilon);
 
 						FILE *fp_raw = fopen( "raw_gc.dat", "a+");
 						fprintf( fp_raw, "%e %e %e %e\n", data_growthcurve.x[idxEpsilon], radius, data_growthcurve.m[idxEpsilon], data_growthcurve.s[idxEpsilon]);
@@ -5579,7 +5580,7 @@ double montecarlo(int argc, char **argv)
 						}
 
 						if( cumEpsilon > maxEpsilon)
-							return cumEpsilon;
+							{fprintf(stderr, "break gc!\n");	return cumEpsilon;}
 					}
 				}
 
@@ -6406,7 +6407,7 @@ double montecarlo(int argc, char **argv)
 
 	// FREE MEMORY
 	//exit(0);
-	return cumEpsilon;
+	{fprintf(stderr, "break !\n");	return cumEpsilon;}
 
 #if MONOD_KINETICS
 #ifdef __WithoutGUI__
