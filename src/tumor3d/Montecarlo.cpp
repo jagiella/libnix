@@ -5452,8 +5452,8 @@ double montecarlo(int argc, char **argv)
 						comparison_t sim_ECM = create_comparison();
 						sim_ECM.dim = (int) ceil( max( data_ECM->x, data_ECM->dim) );
 						//sim_ECM.dim = data_ECM->dim;
-						sim_ECM.x = (double*) malloc( sizeof(double) * sim_ECM->dim);
-						sim_ECM.m = (double*) malloc( sizeof(double) * sim_ECM->dim);
+						sim_ECM.x = (double*) malloc( sizeof(double) * sim_ECM.dim);
+						sim_ECM.m = (double*) malloc( sizeof(double) * sim_ECM.dim);
 						//FILE *fp_raw = fopen( "raw_ecm.dat", "w+");
 						for( int j=0; j<sim_ECM.dim; j++){
 							sim_ECM.x[j] = j;
@@ -5489,8 +5489,8 @@ double montecarlo(int argc, char **argv)
 						fprintf(stderr, "tunel size: %i\n", data_TUNEL->dim);
 						//sim_TUNEL.dim = data_TUNEL->dim;
 						sim_TUNEL.dim = (int) ceil( max( data_TUNEL->x,  data_TUNEL->dim) );
-						sim_TUNEL.x = (double*) malloc( sizeof(double) * sim_TUNEL->dim);
-						sim_TUNEL.m = (double*) malloc( sizeof(double) * sim_TUNEL->dim);
+						sim_TUNEL.x = (double*) malloc( sizeof(double) * sim_TUNEL.dim);
+						sim_TUNEL.m = (double*) malloc( sizeof(double) * sim_TUNEL.dim);
 						//fprintf(stderr, "1\n");
 						//FILE *fp_raw_t = fopen( "raw_TUNEL.dat", "w+");
 						for( int j=0; j<sim_TUNEL.dim; j++){
