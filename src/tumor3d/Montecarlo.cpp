@@ -5421,7 +5421,7 @@ double montecarlo(int argc, char **argv)
 						sim_KI67.dim = (int) ceil( max( data_KI67->x, data_KI67->dim) );
 						sim_KI67.x = (double*) malloc( sizeof(double) * sim_KI67.dim);
 						sim_KI67.m = (double*) malloc( sizeof(double) * sim_KI67.dim);
-						FILE *fp_raw = fopen( "raw_ki67.dat", "w");
+						FILE *fp_raw = fopen( "raw_ki67.dat", "w+");
 						for( int j=0; j<sim_KI67.dim; j++){
 							sim_KI67.x[j] = j;
 							sim_KI67.m[j] = ( histogram[j] - histogramFree[j]>0 ? (double) histogramDividing[j] / (double) (histogram[j] - histogramFree[j]) : 0);
@@ -5452,7 +5452,7 @@ double montecarlo(int argc, char **argv)
 						sim_ECM.dim = (int) ceil( max( data_ECM->x, data_ECM->dim) );
 						sim_ECM.x = (double*) malloc( sizeof(double) * data_ECM->dim);
 						sim_ECM.m = (double*) malloc( sizeof(double) * data_ECM->dim);
-						FILE *fp_raw = fopen( "raw_ecm.dat", "w");
+						FILE *fp_raw = fopen( "raw_ecm.dat", "w+");
 						for( int j=0; j<sim_ECM.dim; j++){
 							sim_ECM.x[j] = j;
 							if( histogram[j])
@@ -5489,7 +5489,9 @@ double montecarlo(int argc, char **argv)
 						sim_TUNEL.x = (double*) malloc( sizeof(double) * data_TUNEL->dim);
 						sim_TUNEL.m = (double*) malloc( sizeof(double) * data_TUNEL->dim);
 						fprintf(stderr, "1\n");
-						FILE *fp_raw = fopen( "raw_TUNEL.dat", "w");
+						FILE *fp_raw = fopen( "raw_TUNEL.dat", "w+");
+						if( fp_raw==0)
+							fprintf(stderr, "raw_TUNEL.dat couldn't be opened\n");
 						for( int j=0; j<sim_TUNEL.dim; j++){
 							sim_TUNEL.x[j] = j;
 							sim_TUNEL.m[j] = ( histogram[j] - histogramFree[j]>0 ? (double) histogramNecrotic[j] / (double) (histogram[j] - histogramFree[j]) : 0);
