@@ -136,7 +136,9 @@ libnix_la_LIBADD =
 am_libnix_la_OBJECTS = libnix_la-gp.lo libnix_la-model.lo \
 	libnix_la-hash.lo libnix_la-statistics.lo \
 	libnix_la-optimization.lo libnix_la-Mathematix.lo \
-	libnix_la-testfunctions.lo libnix_la-tinyxml2.lo
+	libnix_la-testfunctions.lo libnix_la-tinyxml2.lo \
+	libnix_la-tinyxml.lo libnix_la-tinystr.lo \
+	libnix_la-tinyxmlparser.lo libnix_la-tinyxmlerror.lo
 libnix_la_OBJECTS = $(am_libnix_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -349,7 +351,7 @@ nix_gp_LDFLAGS = -fopenmp
 nix_tumor1d_SOURCES = tumor1d.cpp
 nix_tumor1d_LDADD = libnix.la
 nix_tumor1d_CXXFLAGS = -g
-libnix_la_SOURCES = gp.cpp model.cpp hash.cpp statistics.cpp optimization.cpp Mathematix.cpp testfunctions.cpp tinyxml2.cpp
+libnix_la_SOURCES = gp.cpp model.cpp hash.cpp statistics.cpp optimization.cpp Mathematix.cpp testfunctions.cpp tinyxml2.cpp tinyxml.cpp tinystr.cpp tinyxmlparser.cpp tinyxmlerror.cpp
 libnix_la_LDFLAGS = -version-info 0:0:0
 libnix_la_CXXFLAGS = -g
 all: all-am
@@ -495,7 +497,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnix_la-optimization.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnix_la-statistics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnix_la-testfunctions.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnix_la-tinystr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnix_la-tinyxml.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnix_la-tinyxml2.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnix_la-tinyxmlerror.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnix_la-tinyxmlparser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_tumor1d-tumor1d.Po@am__quote@
 
 .cpp.o:
@@ -577,6 +583,34 @@ libnix_la-tinyxml2.lo: tinyxml2.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tinyxml2.cpp' object='libnix_la-tinyxml2.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnix_la_CXXFLAGS) $(CXXFLAGS) -c -o libnix_la-tinyxml2.lo `test -f 'tinyxml2.cpp' || echo '$(srcdir)/'`tinyxml2.cpp
+
+libnix_la-tinyxml.lo: tinyxml.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnix_la_CXXFLAGS) $(CXXFLAGS) -MT libnix_la-tinyxml.lo -MD -MP -MF $(DEPDIR)/libnix_la-tinyxml.Tpo -c -o libnix_la-tinyxml.lo `test -f 'tinyxml.cpp' || echo '$(srcdir)/'`tinyxml.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libnix_la-tinyxml.Tpo $(DEPDIR)/libnix_la-tinyxml.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tinyxml.cpp' object='libnix_la-tinyxml.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnix_la_CXXFLAGS) $(CXXFLAGS) -c -o libnix_la-tinyxml.lo `test -f 'tinyxml.cpp' || echo '$(srcdir)/'`tinyxml.cpp
+
+libnix_la-tinystr.lo: tinystr.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnix_la_CXXFLAGS) $(CXXFLAGS) -MT libnix_la-tinystr.lo -MD -MP -MF $(DEPDIR)/libnix_la-tinystr.Tpo -c -o libnix_la-tinystr.lo `test -f 'tinystr.cpp' || echo '$(srcdir)/'`tinystr.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libnix_la-tinystr.Tpo $(DEPDIR)/libnix_la-tinystr.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tinystr.cpp' object='libnix_la-tinystr.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnix_la_CXXFLAGS) $(CXXFLAGS) -c -o libnix_la-tinystr.lo `test -f 'tinystr.cpp' || echo '$(srcdir)/'`tinystr.cpp
+
+libnix_la-tinyxmlparser.lo: tinyxmlparser.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnix_la_CXXFLAGS) $(CXXFLAGS) -MT libnix_la-tinyxmlparser.lo -MD -MP -MF $(DEPDIR)/libnix_la-tinyxmlparser.Tpo -c -o libnix_la-tinyxmlparser.lo `test -f 'tinyxmlparser.cpp' || echo '$(srcdir)/'`tinyxmlparser.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libnix_la-tinyxmlparser.Tpo $(DEPDIR)/libnix_la-tinyxmlparser.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tinyxmlparser.cpp' object='libnix_la-tinyxmlparser.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnix_la_CXXFLAGS) $(CXXFLAGS) -c -o libnix_la-tinyxmlparser.lo `test -f 'tinyxmlparser.cpp' || echo '$(srcdir)/'`tinyxmlparser.cpp
+
+libnix_la-tinyxmlerror.lo: tinyxmlerror.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnix_la_CXXFLAGS) $(CXXFLAGS) -MT libnix_la-tinyxmlerror.lo -MD -MP -MF $(DEPDIR)/libnix_la-tinyxmlerror.Tpo -c -o libnix_la-tinyxmlerror.lo `test -f 'tinyxmlerror.cpp' || echo '$(srcdir)/'`tinyxmlerror.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libnix_la-tinyxmlerror.Tpo $(DEPDIR)/libnix_la-tinyxmlerror.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tinyxmlerror.cpp' object='libnix_la-tinyxmlerror.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnix_la_CXXFLAGS) $(CXXFLAGS) -c -o libnix_la-tinyxmlerror.lo `test -f 'tinyxmlerror.cpp' || echo '$(srcdir)/'`tinyxmlerror.cpp
 
 nix_tumor1d-tumor1d.o: tumor1d.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nix_tumor1d_CXXFLAGS) $(CXXFLAGS) -MT nix_tumor1d-tumor1d.o -MD -MP -MF $(DEPDIR)/nix_tumor1d-tumor1d.Tpo -c -o nix_tumor1d-tumor1d.o `test -f 'tumor1d.cpp' || echo '$(srcdir)/'`tumor1d.cpp

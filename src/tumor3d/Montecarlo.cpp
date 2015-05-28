@@ -5102,10 +5102,10 @@ double montecarlo(int argc, char **argv)
 					//pharmaco->evolveSystem( voronoiDiagram, timeDifference, customTimestep);
 					//timeDifference = UpdateSystemNewtonCGSparse( voronoiDiagram, Time - timeDifference, Time, customTimestep);
 
-					fprintf(stderr,
+					/*fprintf(stderr,
 							"...finished ( %lisec) -> time rest = %lf\n",
 							(clock() - passedTime) / CLOCKS_PER_SEC,
-							timeDifference);
+							timeDifference);*/
 					benchmarkTime += (clock() - passedTime);
 					//	exit(0);
 					// Newton for non-linear system
@@ -5552,7 +5552,7 @@ double montecarlo(int argc, char **argv)
 					}
 					fprintf(stderr, "[Reset History]\n");
 				}
-				fprintf( stderr, "Radial Profile finished\n");
+				//fprintf( stderr, "Radial Profile finished\n");
 			}
 
 

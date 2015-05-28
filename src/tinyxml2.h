@@ -24,7 +24,7 @@ distribution.
 #ifndef TINYXML2_INCLUDED
 #define TINYXML2_INCLUDED
 
-#if defined(ANDROID_NDK) || defined(__BORLANDC__)
+#if defined(ANDROID_NDK) || defined(__BORLANDC__) || defined(__QNXNTO__)
 #   include <ctype.h>
 #   include <limits.h>
 #   include <stdio.h>
@@ -77,7 +77,8 @@ distribution.
 
 #if defined(DEBUG)
 #   if defined(_MSC_VER)
-#       define TIXMLASSERT( x )           if ( !(x)) { __debugbreak(); } //if ( !(x)) WinDebugBreak()
+#       // "(void)0," is for suppressing C4127 warning in "assert(false)", "assert(true)" and the like
+#       define TIXMLASSERT( x )           if ( !((void)0,(x))) { __debugbreak(); } //if ( !(x)) WinDebugBreak()
 #   elif defined (ANDROID_NDK)
 #       include <android/log.h>
 #       define TIXMLASSERT( x )           if ( !(x)) { __android_log_assert( "assert", "grinliz", "ASSERT in '%s' at %d.", __FILE__, __LINE__ ); }
@@ -121,8 +122,8 @@ inline int TIXML_SNPRINTF( char* buffer, size_t size, const char* format, ... )
 /* Versioning, past 1.0.14:
 	http://semver.org/
 */
-static const int TIXML2_MAJOR_VERSION = 2;
-static const int TIXML2_MINOR_VERSION = 2;
+static const int TIXML2_MAJOR_VERSION = 3;
+static const int TIXML2_MINOR_VERSION = 0;
 static const int TIXML2_PATCH_VERSION = 0;
 
 namespace tinyxml2
@@ -148,7 +149,7 @@ public:
     enum {
         NEEDS_ENTITY_PROCESSING			= 0x01,
         NEEDS_NEWLINE_NORMALIZATION		= 0x02,
-        COLLAPSE_WHITESPACE	                = 0x04,
+        NEEDS_WHITESPACE_COLLAPSING     = 0x04,
 
         TEXT_ELEMENT		            	= NEEDS_ENTITY_PROCESSING | NEEDS_NEWLINE_NORMALIZATION,
         TEXT_ELEMENT_LEAVE_ENTITIES		= NEEDS_NEWLINE_NORMALIZATION,
@@ -184,6 +185,8 @@ public:
     char* ParseText( char* in, const char* endTag, int strFlags );
     char* ParseName( char* in );
 
+    void TransferTo( StrPair* other );
+
 private:
     void Reset();
     void CollapseWhitespace();
@@ -197,6 +200,9 @@ private:
     int     _flags;
     char*   _start;
     char*   _end;
+
+    StrPair( const StrPair& other );	// not supported
+    void operator=( StrPair& other );	// not supported, use TransferTo()
 };
 
 
@@ -205,13 +211,13 @@ private:
 	Has a small initial memory pool, so that low or no usage will not
 	cause a call to new/delete
 */
-template <class T, int INIT>
+template <class T, int INITIAL_SIZE>
 class DynArray
 {
 public:
-    DynArray< T, INIT >() {
+    DynArray() {
         _mem = _pool;
-        _allocated = INIT;
+        _allocated = INITIAL_SIZE;
         _size = 0;
     }
 
@@ -226,11 +232,14 @@ public:
     }
 
     void Push( T t ) {
+        TIXMLASSERT( _size < INT_MAX );
         EnsureCapacity( _size+1 );
         _mem[_size++] = t;
     }
 
     T* PushArr( int count ) {
+        TIXMLASSERT( count >= 0 );
+        TIXMLASSERT( _size <= INT_MAX - count );
         EnsureCapacity( _size+count );
         T* ret = &_mem[_size];
         _size += count;
@@ -238,6 +247,7 @@ public:
     }
 
     T Pop() {
+        TIXMLASSERT( _size > 0 );
         return _mem[--_size];
     }
 
@@ -266,6 +276,7 @@ public:
     }
 
     int Size() const					{
+        TIXMLASSERT( _size >= 0 );
         return _size;
     }
 
@@ -282,8 +293,13 @@ public:
     }
 
 private:
+    DynArray( const DynArray& ); // not supported
+    void operator=( const DynArray& ); // not supported
+
     void EnsureCapacity( int cap ) {
+        TIXMLASSERT( cap > 0 );
         if ( cap > _allocated ) {
+            TIXMLASSERT( cap <= INT_MAX / 2 );
             int newAllocated = cap * 2;
             T* newMem = new T[newAllocated];
             memcpy( newMem, _mem, sizeof(T)*_size );	// warning: not using constructors, only works for PODs
@@ -296,7 +312,7 @@ private:
     }
 
     T*  _mem;
-    T   _pool[INIT];
+    T   _pool[INITIAL_SIZE];
     int _allocated;		// objects allocated
     int _size;			// number objects in use
 };
@@ -413,6 +429,9 @@ public:
     enum { COUNT = (4*1024)/SIZE }; // Some compilers do not accept to use COUNT in private part if COUNT is private
 
 private:
+    MemPoolT( const MemPoolT& ); // not supported
+    void operator=( const MemPoolT& ); // not supported
+
     union Chunk {
         Chunk*  next;
         char    mem[SIZE];
@@ -491,7 +510,7 @@ public:
     }
 };
 
-// WARNING: must match XMLErrorNames[]
+// WARNING: must match XMLDocument::_errorNames[]
 enum XMLError {
     XML_SUCCESS = 0,
     XML_NO_ERROR = 0,
@@ -526,9 +545,11 @@ class XMLUtil
 {
 public:
     static const char* SkipWhiteSpace( const char* p )	{
+        TIXMLASSERT( p );
         while( IsWhiteSpace(*p) ) {
             ++p;
         }
+        TIXMLASSERT( p );
         return p;
     }
     static char* SkipWhiteSpace( char* p )				{
@@ -542,9 +563,14 @@ public:
     }
     
     inline static bool IsNameStartChar( unsigned char ch ) {
-        return ( ( ch < 128 ) ? isalpha( ch ) : 1 )
-               || ch == ':'
-               || ch == '_';
+        if ( ch >= 128 ) {
+            // This is a heuristic guess in attempt to not implement Unicode-aware isalpha()
+            return true;
+        }
+        if ( isalpha( ch ) ) {
+            return true;
+        }
+        return ch == ':' || ch == '_';
     }
     
     inline static bool IsNameChar( unsigned char ch ) {
@@ -555,10 +581,10 @@ public:
     }
 
     inline static bool StringEqual( const char* p, const char* q, int nChar=INT_MAX )  {
-        int n = 0;
         if ( p == q ) {
             return true;
         }
+        int n = 0;
         while( *p && *q && *p == *q && n<nChar ) {
             ++p;
             ++q;
@@ -682,7 +708,7 @@ public:
 
     /** The meaning of 'value' changes for the specific type.
     	@verbatim
-    	Document:	empty
+    	Document:	empty (NULL is returned, not an empty string)
     	Element:	name of the element
     	Comment:	the comment text
     	Unknown:	the tag contents
@@ -734,7 +760,7 @@ public:
     }
 
     XMLNode*		LastChild()								{
-        return const_cast<XMLNode*>(const_cast<const XMLNode*>(this)->LastChild() );
+        return _lastChild;
     }
 
     /** Get the last child element or optionally the last child
@@ -861,14 +887,11 @@ public:
     */
     virtual bool Accept( XMLVisitor* visitor ) const = 0;
 
-    // internal
-    virtual char* ParseDeep( char*, StrPair* );
-
 protected:
     XMLNode( XMLDocument* );
     virtual ~XMLNode();
-    XMLNode( const XMLNode& );	// not supported
-    XMLNode& operator=( const XMLNode& );	// not supported
+
+    virtual char* ParseDeep( char*, StrPair* );
 
     XMLDocument*	_document;
     XMLNode*		_parent;
@@ -884,6 +907,10 @@ private:
     MemPool*		_memPool;
     void Unlink( XMLNode* child );
     static void DeleteNode( XMLNode* node );
+    void InsertChildPreamble( XMLNode* insertThis ) const;
+
+    XMLNode( const XMLNode& );	// not supported
+    XMLNode& operator=( const XMLNode& );	// not supported
 };
 
 
@@ -922,18 +949,20 @@ public:
         return _isCData;
     }
 
-    char* ParseDeep( char*, StrPair* endTag );
     virtual XMLNode* ShallowClone( XMLDocument* document ) const;
     virtual bool ShallowEqual( const XMLNode* compare ) const;
 
 protected:
     XMLText( XMLDocument* doc )	: XMLNode( doc ), _isCData( false )	{}
     virtual ~XMLText()												{}
-    XMLText( const XMLText& );	// not supported
-    XMLText& operator=( const XMLText& );	// not supported
+
+    char* ParseDeep( char*, StrPair* endTag );
 
 private:
     bool _isCData;
+
+    XMLText( const XMLText& );	// not supported
+    XMLText& operator=( const XMLText& );	// not supported
 };
 
 
@@ -951,17 +980,18 @@ public:
 
     virtual bool Accept( XMLVisitor* visitor ) const;
 
-    char* ParseDeep( char*, StrPair* endTag );
     virtual XMLNode* ShallowClone( XMLDocument* document ) const;
     virtual bool ShallowEqual( const XMLNode* compare ) const;
 
 protected:
     XMLComment( XMLDocument* doc );
     virtual ~XMLComment();
-    XMLComment( const XMLComment& );	// not supported
-    XMLComment& operator=( const XMLComment& );	// not supported
+
+    char* ParseDeep( char*, StrPair* endTag );
 
 private:
+    XMLComment( const XMLComment& );	// not supported
+    XMLComment& operator=( const XMLComment& );	// not supported
 };
 
 
@@ -989,13 +1019,16 @@ public:
 
     virtual bool Accept( XMLVisitor* visitor ) const;
 
-    char* ParseDeep( char*, StrPair* endTag );
     virtual XMLNode* ShallowClone( XMLDocument* document ) const;
     virtual bool ShallowEqual( const XMLNode* compare ) const;
 
 protected:
     XMLDeclaration( XMLDocument* doc );
     virtual ~XMLDeclaration();
+
+    char* ParseDeep( char*, StrPair* endTag );
+
+private:
     XMLDeclaration( const XMLDeclaration& );	// not supported
     XMLDeclaration& operator=( const XMLDeclaration& );	// not supported
 };
@@ -1021,13 +1054,16 @@ public:
 
     virtual bool Accept( XMLVisitor* visitor ) const;
 
-    char* ParseDeep( char*, StrPair* endTag );
     virtual XMLNode* ShallowClone( XMLDocument* document ) const;
     virtual bool ShallowEqual( const XMLNode* compare ) const;
 
 protected:
     XMLUnknown( XMLDocument* doc );
     virtual ~XMLUnknown();
+
+    char* ParseDeep( char*, StrPair* endTag );
+
+private:
     XMLUnknown( const XMLUnknown& );	// not supported
     XMLUnknown& operator=( const XMLUnknown& );	// not supported
 };
@@ -1476,9 +1512,11 @@ public:
     int ClosingType() const {
         return _closingType;
     }
-    char* ParseDeep( char* p, StrPair* endTag );
     virtual XMLNode* ShallowClone( XMLDocument* document ) const;
     virtual bool ShallowEqual( const XMLNode* compare ) const;
+
+protected:
+    char* ParseDeep( char* p, StrPair* endTag );
 
 private:
     XMLElement( XMLDocument* doc );
@@ -1486,7 +1524,9 @@ private:
     XMLElement( const XMLElement& );	// not supported
     void operator=( const XMLElement& );	// not supported
 
-    XMLAttribute* FindAttribute( const char* name );
+    XMLAttribute* FindAttribute( const char* name ) {
+        return const_cast<XMLAttribute*>(const_cast<const XMLElement*>(this)->FindAttribute( name ));
+    }
     XMLAttribute* FindOrCreateAttribute( const char* name );
     //void LinkAttribute( XMLAttribute* attrib );
     char* ParseAttributes( char* p );
@@ -1548,7 +1588,11 @@ public:
 
     /**
     	Load an XML file from disk. You are responsible
-    	for providing and closing the FILE*.
+    	for providing and closing the FILE*. 
+     
+        NOTE: The file should be opened as binary ("rb")
+        not text in order for TinyXML-2 to correctly
+        do newline normalization.
 
     	Returns XML_NO_ERROR (0) on success, or
     	an errorID.
@@ -1658,9 +1702,7 @@ public:
     	Delete a node associated with this document.
     	It will be unlinked from the DOM.
     */
-    void DeleteNode( XMLNode* node )	{
-        node->_parent->DeleteChild( node );
-    }
+    void DeleteNode( XMLNode* node );
 
     void SetError( XMLError error, const char* str1, const char* str2 );
 
@@ -1716,6 +1758,8 @@ private:
     MemPoolT< sizeof(XMLComment) >	 _commentPool;
 
 	static const char* _errorNames[XML_ERROR_COUNT];
+
+    void Parse();
 };
 
 
@@ -1759,7 +1803,7 @@ private:
 
 	@verbatim
 	XMLHandle docHandle( &document );
-	XMLElement* child2 = docHandle.FirstChild( "Document" ).FirstChild( "Element" ).FirstChild().NextSibling().ToElement();
+	XMLElement* child2 = docHandle.FirstChildElement( "Document" ).FirstChildElement( "Element" ).FirstChildElement().NextSiblingElement();
 	if ( child2 )
 	{
 		// do something useful
@@ -2057,7 +2101,7 @@ protected:
     virtual void PrintSpace( int depth );
     void Print( const char* format, ... );
 
-	void SealElement();
+    void SealElementIfJustOpened();
     bool _elementJustOpened;
     DynArray< const char*, 10 > _stack;
 

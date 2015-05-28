@@ -59,6 +59,7 @@ AC_CHECK_FUNCS([floor pow sqrt])
 
 AC_CONFIG_FILES([Makefile
                  src/tumor3d/Makefile
+                 src/vascularization/Makefile
                  src/bin_abc/Makefile
                  src/lunatick/Makefile
                  src/offlattice/Makefile

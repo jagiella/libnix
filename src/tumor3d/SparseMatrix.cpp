@@ -2653,7 +2653,7 @@ double UpdateSystemNonLinearCGSparse( VoronoiDiagram *voronoiDiagram, double tim
 	// STEADY STATE
 	time = end_time;
 	{
-		fprintf( stderr, "time = %lf / %lf (dt = %lf) ...\n", time, end_time, timeStep);
+		//fprintf( stderr, "time = %lf / %lf (dt = %lf) ...\n", time, end_time, timeStep);
 
 #pragma omp parallel for
 		for(int m=0; m<N; m++){
