@@ -5488,7 +5488,7 @@ double montecarlo(int argc, char **argv)
 						sim_TUNEL.dim = (int) ceil( max( data_TUNEL->x, data_TUNEL->dim) );
 						sim_TUNEL.x = (double*) malloc( sizeof(double) * data_TUNEL->dim);
 						sim_TUNEL.m = (double*) malloc( sizeof(double) * data_TUNEL->dim);
-						fprintf(stderr, "1\n")
+						fprintf(stderr, "1\n");
 						FILE *fp_raw = fopen( "raw_TUNEL.dat", "w");
 						for( int j=0; j<sim_TUNEL.dim; j++){
 							sim_TUNEL.x[j] = j;
@@ -5496,14 +5496,14 @@ double montecarlo(int argc, char **argv)
 							sim_TUNEL.m[j] = max( 0.,  sim_TUNEL.m[j] + measurement_error_TUNEL*normrnd());
 							fprintf( fp_raw, "%e %e %e %e\n", data_TUNEL->x[j], sim_TUNEL.m[j], data_TUNEL->m[j], data_TUNEL->s[j]);
 						}
-						fprintf(stderr, "2\n")
+						fprintf(stderr, "2\n");
 
 						fclose(fp_raw);
-						fprintf(stderr, "3\n")
+						fprintf(stderr, "3\n");
 
 						cumEpsilon += compare( *data_TUNEL, sim_TUNEL, mean_vs_mean) / data_TUNEL->dim;
 						//fprintf(stderr, "<< %e >>\n", cumEpsilon);
-						fprintf(stderr, "4\n")
+						fprintf(stderr, "4\n");
 
 						if( isnan(cumEpsilon)){
 							fprintf(stderr, "{data_TUNEL}!\n"); exit(0);
