@@ -5405,7 +5405,7 @@ double montecarlo(int argc, char **argv)
 				for( int day=(int)ceil(Last_Time/24.); day < (int)ceil(Time/24.); day++ )
 				if(	inbound<double>( RadialProfilesTime, day-1, day-1, RadialProfilesCount, 1))
 				{
-					//fprintf(stderr, "[Compare to Data: %i]\n", (int)ceil(Last_Time/24.));
+					fprintf(stderr, "[Compare to Data: %i]\n", (int)ceil(Last_Time/24.));
 
 					// data_KI67
 					comparison_t *data_KI67;
