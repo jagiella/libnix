@@ -5511,6 +5511,7 @@ double montecarlo(int argc, char **argv)
 
 
 					// WRITE TO FILE
+					fprintf(stderr, "[Write Radial Profile]\n");
 					//fprintf(stderr, "[Print Cells to Povray File]\n");
 					//***sprintf(outfilename, "%s/rel%i.radialProfiles_day%i-%i.pov", dirname, k, (int)floor(Last_Time/24.), (int)ceil(Last_Time/24.));
 					sprintf(outfilename, "%s/rel%i.radialProfiles_day%i-%i.pov", dirname, k, day-1, day);
