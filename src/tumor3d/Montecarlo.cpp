@@ -5418,18 +5418,18 @@ double montecarlo(int argc, char **argv)
 						//fprintf(stderr, "[Compare to KI67 Data]\n");
 
 						comparison_t sim_KI67 = create_comparison();
-						//sim_KI67.dim = (int) ceil( max( data_KI67->x, data_KI67->dim) );
-						sim_KI67.dim = data_KI67->dim;
+						sim_KI67.dim = (int) ceil( max( data_KI67->x, data_KI67->dim) );
+						//sim_KI67.dim = data_KI67->dim;
 						sim_KI67.x = (double*) malloc( sizeof(double) * sim_KI67.dim);
 						sim_KI67.m = (double*) malloc( sizeof(double) * sim_KI67.dim);
-						FILE *fp_raw = fopen( "raw_ki67.dat", "w+");
+						//FILE *fp_raw = fopen( "raw_ki67.dat", "w+");
 						for( int j=0; j<sim_KI67.dim; j++){
 							sim_KI67.x[j] = j;
 							sim_KI67.m[j] = ( histogram[j] - histogramFree[j]>0 ? (double) histogramDividing[j] / (double) (histogram[j] - histogramFree[j]) : 0);
 							sim_KI67.m[j] = max( 0.,  sim_KI67.m[j] + measurement_error_ki67*normrnd());
-							fprintf( fp_raw, "%e %e %e %e\n", data_KI67->x[j], sim_KI67.m[j], data_KI67->m[j], data_KI67->s[j]);
+							//fprintf( fp_raw, "%e %e %e %e\n", data_KI67->x[j], sim_KI67.m[j], data_KI67->m[j], data_KI67->s[j]);
 						}
-						fclose(fp_raw);
+						//fclose(fp_raw);
 
 						cumEpsilon += compare( *data_KI67, sim_KI67, mean_vs_mean) / data_KI67->dim;
 						//fprintf(stderr, "<< %e >>\n", cumEpsilon);
@@ -5450,11 +5450,11 @@ double montecarlo(int argc, char **argv)
 					}
 					if(true && data_ECM->dim){
 						comparison_t sim_ECM = create_comparison();
-						//sim_ECM.dim = (int) ceil( max( data_ECM->x, data_ECM->dim) );
-						sim_ECM.dim = data_ECM->dim;
+						sim_ECM.dim = (int) ceil( max( data_ECM->x, data_ECM->dim) );
+						//sim_ECM.dim = data_ECM->dim;
 						sim_ECM.x = (double*) malloc( sizeof(double) * data_ECM->dim);
 						sim_ECM.m = (double*) malloc( sizeof(double) * data_ECM->dim);
-						FILE *fp_raw = fopen( "raw_ecm.dat", "w+");
+						//FILE *fp_raw = fopen( "raw_ecm.dat", "w+");
 						for( int j=0; j<sim_ECM.dim; j++){
 							sim_ECM.x[j] = j;
 							if( histogram[j])
@@ -5462,9 +5462,9 @@ double montecarlo(int argc, char **argv)
 							else
 								sim_ECM.m[j] = 0;
 							sim_ECM.m[j] = max( 0.,  sim_ECM.m[j] + measurement_error_ecm*normrnd());
-							fprintf( fp_raw, "%e %e %e %e\n", data_ECM->x[j], sim_ECM.m[j], data_ECM->m[j], data_ECM->s[j]);
+							//fprintf( fp_raw, "%e %e %e %e\n", data_ECM->x[j], sim_ECM.m[j], data_ECM->m[j], data_ECM->s[j]);
 						}
-						fclose(fp_raw);
+						//fclose(fp_raw);
 
 						cumEpsilon += compare( *data_ECM, sim_ECM, mean_vs_mean) / data_ECM->dim;
 						//fprintf(stderr, "<< %e >>\n", cumEpsilon);
@@ -5487,31 +5487,28 @@ double montecarlo(int argc, char **argv)
 					if(true && data_TUNEL->dim){
 						comparison_t sim_TUNEL = create_comparison();
 						fprintf(stderr, "tunel size: %i\n", data_TUNEL->dim);
-						sim_TUNEL.dim = data_TUNEL->dim;
-						//sim_TUNEL.dim = (int) ceil( max( data_TUNEL->x, data_TUNEL->dim) );
+						//sim_TUNEL.dim = data_TUNEL->dim;
+						sim_TUNEL.dim = (int) ceil( max( data_TUNEL->x, data_TUNEL->dim) );
 						sim_TUNEL.x = (double*) malloc( sizeof(double) * data_TUNEL->dim);
 						sim_TUNEL.m = (double*) malloc( sizeof(double) * data_TUNEL->dim);
-						fprintf(stderr, "1\n");
-						FILE *fp_raw_t = fopen( "raw_TUNEL.dat", "w+");
-						perror( "bla");
-						if( fp_raw_t==NULL)
-							fprintf(stderr, "raw_TUNEL.dat couldn't be opened\n");
+						//fprintf(stderr, "1\n");
+						//FILE *fp_raw_t = fopen( "raw_TUNEL.dat", "w+");
 						for( int j=0; j<sim_TUNEL.dim; j++){
 							sim_TUNEL.x[j] = j;
 							sim_TUNEL.m[j] = ( histogram[j] - histogramFree[j]>0 ? (double) histogramNecrotic[j] / (double) (histogram[j] - histogramFree[j]) : 0);
 							sim_TUNEL.m[j] = max( 0.,  sim_TUNEL.m[j] + measurement_error_TUNEL*normrnd());
 
-							fprintf( stderr, "%i %e %e %e %e\n", j, data_TUNEL->x[j], sim_TUNEL.m[j], data_TUNEL->m[j], data_TUNEL->s[j]);
-							fprintf( fp_raw_t, "%e %e %e %e\n", data_TUNEL->x[j], sim_TUNEL.m[j], data_TUNEL->m[j], data_TUNEL->s[j]);
+							//fprintf( stderr, "%i %e %e %e %e\n", j, data_TUNEL->x[j], sim_TUNEL.m[j], data_TUNEL->m[j], data_TUNEL->s[j]);
+							//fprintf( fp_raw_t, "%e %e %e %e\n", data_TUNEL->x[j], sim_TUNEL.m[j], data_TUNEL->m[j], data_TUNEL->s[j]);
 						}
-						fprintf(stderr, "2\n");
+						//fprintf(stderr, "2\n");
 
-						fclose(fp_raw_t);
-						fprintf(stderr, "3\n");
+						//fclose(fp_raw_t);
+						//fprintf(stderr, "3\n");
 
 						cumEpsilon += compare( *data_TUNEL, sim_TUNEL, mean_vs_mean) / data_TUNEL->dim;
 						//fprintf(stderr, "<< %e >>\n", cumEpsilon);
-						fprintf(stderr, "4\n");
+						//fprintf(stderr, "4\n");
 
 						if( isnan(cumEpsilon)){
 							fprintf(stderr, "{data_TUNEL}!\n"); exit(0);
