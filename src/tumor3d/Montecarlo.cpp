@@ -5490,6 +5490,7 @@ double montecarlo(int argc, char **argv)
 						sim_TUNEL.m = (double*) malloc( sizeof(double) * data_TUNEL->dim);
 						fprintf(stderr, "1\n");
 						FILE *fp_raw_t = fopen( "raw_TUNEL.dat", "w+");
+						perror( "bla");
 						if( fp_raw_t==NULL)
 							fprintf(stderr, "raw_TUNEL.dat couldn't be opened\n");
 						for( int j=0; j<sim_TUNEL.dim; j++){
