@@ -5438,7 +5438,7 @@ double montecarlo(int argc, char **argv)
 
 						if( cumEpsilon > maxEpsilon)
 							{fprintf(stderr, "break ki67 %i!\n", day-1);	return cumEpsilon;}
-						//fprintf(stderr, "[Compared to KI67 data]\n");
+						fprintf(stderr, "[Compared to KI67 data]\n");
 					}
 
 					// data_ECM
@@ -5473,7 +5473,7 @@ double montecarlo(int argc, char **argv)
 
 						if( cumEpsilon > maxEpsilon)
 							{fprintf(stderr, "break ecm %i!\n", day-1);	return cumEpsilon;}
-						//fprintf(stderr, "[Compared to ECM data]\n");
+						fprintf(stderr, "[Compared to ECM data]\n");
 					}
 
 					// data_TUNEL
@@ -5506,7 +5506,7 @@ double montecarlo(int argc, char **argv)
 						if( cumEpsilon > maxEpsilon)
 							{fprintf(stderr, "break tunel %i!\n", day-1);	return cumEpsilon;}
 
-						//fprintf(stderr, "[Compared to TUNEL data]\n");
+						fprintf(stderr, "[Compared to TUNEL data]\n");
 					}
 
 
@@ -5553,7 +5553,7 @@ double montecarlo(int argc, char **argv)
 					}
 					fprintf(stderr, "[Reset History]\n");
 				}
-				//fprintf( stderr, "Radial Profile finished\n");
+				fprintf( stderr, "Radial Profile finished\n");
 			}
 
 
