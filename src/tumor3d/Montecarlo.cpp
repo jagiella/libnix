@@ -5484,6 +5484,7 @@ double montecarlo(int argc, char **argv)
 					}
 					if(true && data_TUNEL->dim){
 						comparison_t sim_TUNEL = create_comparison();
+						fprintf(stderr, "tunel size: %i\n", data_TUNEL->dim);
 						sim_TUNEL.dim = (int) ceil( max( data_TUNEL->x, data_TUNEL->dim) );
 						sim_TUNEL.x = (double*) malloc( sizeof(double) * data_TUNEL->dim);
 						sim_TUNEL.m = (double*) malloc( sizeof(double) * data_TUNEL->dim);
