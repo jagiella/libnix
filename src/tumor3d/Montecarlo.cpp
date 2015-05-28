@@ -5489,18 +5489,18 @@ double montecarlo(int argc, char **argv)
 						sim_TUNEL.x = (double*) malloc( sizeof(double) * data_TUNEL->dim);
 						sim_TUNEL.m = (double*) malloc( sizeof(double) * data_TUNEL->dim);
 						fprintf(stderr, "1\n");
-						FILE *fp_raw = fopen( "raw_TUNEL.dat", "w+");
-						if( fp_raw==0)
+						FILE *fp_raw_t = fopen( "raw_TUNEL.dat", "w+");
+						if( fp_raw_t==NULL)
 							fprintf(stderr, "raw_TUNEL.dat couldn't be opened\n");
 						for( int j=0; j<sim_TUNEL.dim; j++){
 							sim_TUNEL.x[j] = j;
 							sim_TUNEL.m[j] = ( histogram[j] - histogramFree[j]>0 ? (double) histogramNecrotic[j] / (double) (histogram[j] - histogramFree[j]) : 0);
 							sim_TUNEL.m[j] = max( 0.,  sim_TUNEL.m[j] + measurement_error_TUNEL*normrnd());
-							fprintf( fp_raw, "%e %e %e %e\n", data_TUNEL->x[j], sim_TUNEL.m[j], data_TUNEL->m[j], data_TUNEL->s[j]);
+							fprintf( fp_raw_t, "%e %e %e %e\n", data_TUNEL->x[j], sim_TUNEL.m[j], data_TUNEL->m[j], data_TUNEL->s[j]);
 						}
 						fprintf(stderr, "2\n");
 
-						fclose(fp_raw);
+						fclose(fp_raw_t);
 						fprintf(stderr, "3\n");
 
 						cumEpsilon += compare( *data_TUNEL, sim_TUNEL, mean_vs_mean) / data_TUNEL->dim;
