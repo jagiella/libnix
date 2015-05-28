@@ -5418,7 +5418,8 @@ double montecarlo(int argc, char **argv)
 						//fprintf(stderr, "[Compare to KI67 Data]\n");
 
 						comparison_t sim_KI67 = create_comparison();
-						sim_KI67.dim = (int) ceil( max( data_KI67->x, data_KI67->dim) );
+						//sim_KI67.dim = (int) ceil( max( data_KI67->x, data_KI67->dim) );
+						sim_KI67.dim = data_KI67->dim;
 						sim_KI67.x = (double*) malloc( sizeof(double) * sim_KI67.dim);
 						sim_KI67.m = (double*) malloc( sizeof(double) * sim_KI67.dim);
 						FILE *fp_raw = fopen( "raw_ki67.dat", "w+");
@@ -5449,7 +5450,8 @@ double montecarlo(int argc, char **argv)
 					}
 					if(true && data_ECM->dim){
 						comparison_t sim_ECM = create_comparison();
-						sim_ECM.dim = (int) ceil( max( data_ECM->x, data_ECM->dim) );
+						//sim_ECM.dim = (int) ceil( max( data_ECM->x, data_ECM->dim) );
+						sim_ECM.dim = data_ECM->dim;
 						sim_ECM.x = (double*) malloc( sizeof(double) * data_ECM->dim);
 						sim_ECM.m = (double*) malloc( sizeof(double) * data_ECM->dim);
 						FILE *fp_raw = fopen( "raw_ecm.dat", "w+");
@@ -5485,7 +5487,8 @@ double montecarlo(int argc, char **argv)
 					if(true && data_TUNEL->dim){
 						comparison_t sim_TUNEL = create_comparison();
 						fprintf(stderr, "tunel size: %i\n", data_TUNEL->dim);
-						sim_TUNEL.dim = (int) ceil( max( data_TUNEL->x, data_TUNEL->dim) );
+						sim_TUNEL.dim = data_TUNEL->dim;
+						//sim_TUNEL.dim = (int) ceil( max( data_TUNEL->x, data_TUNEL->dim) );
 						sim_TUNEL.x = (double*) malloc( sizeof(double) * data_TUNEL->dim);
 						sim_TUNEL.m = (double*) malloc( sizeof(double) * data_TUNEL->dim);
 						fprintf(stderr, "1\n");
