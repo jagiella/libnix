@@ -72,7 +72,7 @@ int readFileColumn( const char* filename, double *&col, int icol)
 	}
 	fclose(fp);
 
-	return nrow;
+	return nrow-1;
 }
 
 int readFileColumn( char** filename, int n, double **&col, int icol)

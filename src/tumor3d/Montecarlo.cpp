@@ -5493,7 +5493,7 @@ double montecarlo(int argc, char **argv)
 						perror( "bla");
 						if( fp_raw_t==NULL)
 							fprintf(stderr, "raw_TUNEL.dat couldn't be opened\n");
-						for( int j=0; j<sim_TUNEL.dim-1; j++){
+						for( int j=0; j<sim_TUNEL.dim; j++){
 							sim_TUNEL.x[j] = j;
 							sim_TUNEL.m[j] = ( histogram[j] - histogramFree[j]>0 ? (double) histogramNecrotic[j] / (double) (histogram[j] - histogramFree[j]) : 0);
 							sim_TUNEL.m[j] = max( 0.,  sim_TUNEL.m[j] + measurement_error_TUNEL*normrnd());
