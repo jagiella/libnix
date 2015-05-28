@@ -71,8 +71,8 @@ int readFileColumn( const char* filename, double *&col, int icol)
 		col[nrow-1]  = strtof( ptr, &ptr) ;
 	}
 	fclose(fp);
-
-	return nrow-1;
+	fprintf(stderr, "Read %i rows from file %s\n", nrow, filename);
+	return nrow;
 }
 
 int readFileColumn( char** filename, int n, double **&col, int icol)
