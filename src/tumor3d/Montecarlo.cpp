@@ -5499,7 +5499,7 @@ double montecarlo(int argc, char **argv)
 							sim_TUNEL.m[j] = max( 0.,  sim_TUNEL.m[j] + measurement_error_TUNEL*normrnd());
 
 							fprintf( stderr, "%e %e %e %e\n", data_TUNEL->x[j], sim_TUNEL.m[j], data_TUNEL->m[j], data_TUNEL->s[j]);
-							fprintf( fp_raw_t, "%e %e %e %e\n", data_TUNEL->x[j], sim_TUNEL.m[j], data_TUNEL->m[j], data_TUNEL->s[j]);
+							fprintf( fp_raw_t, "%i %e %e %e %e\n", j, data_TUNEL->x[j], sim_TUNEL.m[j], data_TUNEL->m[j], data_TUNEL->s[j]);
 						}
 						fprintf(stderr, "2\n");
 
