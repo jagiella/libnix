@@ -6042,7 +6042,7 @@ double montecarlo(int argc, char **argv)
 
 			}
 
-/*			fprintf(stderr, "\r > %d/%d: time %.3lf/%.3lf", k + 1, Averages,
+			fprintf(stderr, "\r > %d/%d: time %.3lf/%.3lf", k + 1, Averages,
 					Time, EndTime);
 			fprinttextcolor(GREEN);
 			fprintf(stderr, "[CELLS:%i] ", count_cells);
@@ -6050,7 +6050,7 @@ double montecarlo(int argc, char **argv)
 			fprintf(stderr, "[DEAD:%i]\t\t", count_necrotic_cells);
 			//fprinttextcolor(BLACK);
 			fprinttextattribute(RESET);
-*/
+
 		} while (Time < EndTime && actionList->size != 0);
 
 		fprintf( stderr, "Simulation finished!\n");
