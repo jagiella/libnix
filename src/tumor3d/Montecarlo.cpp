@@ -5791,8 +5791,8 @@ double montecarlo(int argc, char **argv)
 					return maxEpsilon;
 				}*/
 
-				if( data_growthcurve.dim && maxRadius < sqrt(gyrRadius) * AGENT_DIAMETER * 0.8)
-					return maxEpsilon;
+				//if( data_growthcurve.dim && maxRadius < sqrt(gyrRadius) * AGENT_DIAMETER * 0.8)
+				//	return maxEpsilon;
 
 				global_gyrRadius[l] += sqrt(gyrRadius);
 

@@ -133,12 +133,14 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libnix_la_LIBADD =
-am_libnix_la_OBJECTS = libnix_la-gp.lo libnix_la-model.lo \
-	libnix_la-hash.lo libnix_la-statistics.lo \
-	libnix_la-optimization.lo libnix_la-Mathematix.lo \
-	libnix_la-testfunctions.lo libnix_la-tinyxml2.lo \
-	libnix_la-tinyxml.lo libnix_la-tinystr.lo \
-	libnix_la-tinyxmlparser.lo libnix_la-tinyxmlerror.lo
+am__dirstamp = $(am__leading_dot)dirstamp
+am_libnix_la_OBJECTS = IO/libnix_la-EPS.lo IO/libnix_la-Povray.lo \
+	libnix_la-gp.lo libnix_la-model.lo libnix_la-hash.lo \
+	libnix_la-statistics.lo libnix_la-optimization.lo \
+	libnix_la-Mathematix.lo libnix_la-testfunctions.lo \
+	libnix_la-tinyxml2.lo libnix_la-tinyxml.lo \
+	libnix_la-tinystr.lo libnix_la-tinyxmlparser.lo \
+	libnix_la-tinyxmlerror.lo
 libnix_la_OBJECTS = $(am_libnix_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -351,7 +353,7 @@ nix_gp_LDFLAGS = -fopenmp
 nix_tumor1d_SOURCES = tumor1d.cpp
 nix_tumor1d_LDADD = libnix.la
 nix_tumor1d_CXXFLAGS = -g
-libnix_la_SOURCES = gp.cpp model.cpp hash.cpp statistics.cpp optimization.cpp Mathematix.cpp testfunctions.cpp tinyxml2.cpp tinyxml.cpp tinystr.cpp tinyxmlparser.cpp tinyxmlerror.cpp
+libnix_la_SOURCES = IO/EPS.cpp IO/Povray.cpp gp.cpp model.cpp hash.cpp statistics.cpp optimization.cpp Mathematix.cpp testfunctions.cpp tinyxml2.cpp tinyxml.cpp tinystr.cpp tinyxmlparser.cpp tinyxmlerror.cpp
 libnix_la_LDFLAGS = -version-info 0:0:0
 libnix_la_CXXFLAGS = -g
 all: all-am
@@ -422,6 +424,15 @@ clean-libLTLIBRARIES:
 	  echo rm -f $${locs}; \
 	  rm -f $${locs}; \
 	}
+IO/$(am__dirstamp):
+	@$(MKDIR_P) IO
+	@: > IO/$(am__dirstamp)
+IO/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) IO/$(DEPDIR)
+	@: > IO/$(DEPDIR)/$(am__dirstamp)
+IO/libnix_la-EPS.lo: IO/$(am__dirstamp) IO/$(DEPDIR)/$(am__dirstamp)
+IO/libnix_la-Povray.lo: IO/$(am__dirstamp) \
+	IO/$(DEPDIR)/$(am__dirstamp)
 
 libnix.la: $(libnix_la_OBJECTS) $(libnix_la_DEPENDENCIES) $(EXTRA_libnix_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libnix_la_LINK) -rpath $(libdir) $(libnix_la_OBJECTS) $(libnix_la_LIBADD) $(LIBS)
@@ -485,6 +496,8 @@ nix-tumor1d$(EXEEXT): $(nix_tumor1d_OBJECTS) $(nix_tumor1d_DEPENDENCIES) $(EXTRA
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f IO/*.$(OBJEXT)
+	-rm -f IO/*.lo
 
 distclean-compile:
 	-rm -f *.tab.c
@@ -503,6 +516,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnix_la-tinyxmlerror.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnix_la-tinyxmlparser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nix_tumor1d-tumor1d.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@IO/$(DEPDIR)/libnix_la-EPS.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@IO/$(DEPDIR)/libnix_la-Povray.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -527,6 +542,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
+
+IO/libnix_la-EPS.lo: IO/EPS.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnix_la_CXXFLAGS) $(CXXFLAGS) -MT IO/libnix_la-EPS.lo -MD -MP -MF IO/$(DEPDIR)/libnix_la-EPS.Tpo -c -o IO/libnix_la-EPS.lo `test -f 'IO/EPS.cpp' || echo '$(srcdir)/'`IO/EPS.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) IO/$(DEPDIR)/libnix_la-EPS.Tpo IO/$(DEPDIR)/libnix_la-EPS.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='IO/EPS.cpp' object='IO/libnix_la-EPS.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnix_la_CXXFLAGS) $(CXXFLAGS) -c -o IO/libnix_la-EPS.lo `test -f 'IO/EPS.cpp' || echo '$(srcdir)/'`IO/EPS.cpp
+
+IO/libnix_la-Povray.lo: IO/Povray.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnix_la_CXXFLAGS) $(CXXFLAGS) -MT IO/libnix_la-Povray.lo -MD -MP -MF IO/$(DEPDIR)/libnix_la-Povray.Tpo -c -o IO/libnix_la-Povray.lo `test -f 'IO/Povray.cpp' || echo '$(srcdir)/'`IO/Povray.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) IO/$(DEPDIR)/libnix_la-Povray.Tpo IO/$(DEPDIR)/libnix_la-Povray.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='IO/Povray.cpp' object='IO/libnix_la-Povray.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnix_la_CXXFLAGS) $(CXXFLAGS) -c -o IO/libnix_la-Povray.lo `test -f 'IO/Povray.cpp' || echo '$(srcdir)/'`IO/Povray.cpp
 
 libnix_la-gp.lo: gp.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnix_la_CXXFLAGS) $(CXXFLAGS) -MT libnix_la-gp.lo -MD -MP -MF $(DEPDIR)/libnix_la-gp.Tpo -c -o libnix_la-gp.lo `test -f 'gp.cpp' || echo '$(srcdir)/'`gp.cpp
@@ -631,6 +660,7 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
+	-rm -rf IO/.libs IO/_libs
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -749,6 +779,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f IO/$(DEPDIR)/$(am__dirstamp)
+	-rm -f IO/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -759,7 +791,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
 	clean-libtool mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf ./$(DEPDIR) IO/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -805,7 +837,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf ./$(DEPDIR) IO/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
