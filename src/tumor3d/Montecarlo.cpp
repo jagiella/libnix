@@ -1926,8 +1926,12 @@ double montecarlo(int argc, char **argv)
 				VoronoiCell::USE_WASTE = true;
 			} else if (strstr(optarg, "Morphogen") != 0) {
 				VoronoiCell::USE_MORPHOGEN = true;
-			} else if (strstr(optarg, "MaxGlucoseConsumption") != 0) {
-				Agent::NICK_G_MAX = value * 1e-17;
+			} else if (strstr(optarg, "GlucoseConsumption") != 0) {
+				Agent::NICK_G_MIN *= value;
+				Agent::NICK_G_MAX *= value;
+			} else if (strstr(optarg, "OxygenConsumption") != 0) {
+				Agent::NICK_O_MIN *= value;
+				Agent::NICK_O_MAX *= value;
 			} else if (strstr(optarg, "PovrayOutput") != 0) {
 				PovrayOutput = true;
 			} else if (strstr(optarg, "NoSliceOutput") != 0) {
@@ -4424,7 +4428,8 @@ double montecarlo(int argc, char **argv)
 										VoronoiCell::symbolicExtendedNeighborhood);
 
 
-								if (closestVC && selected_action->originalCell->countFreeNeighbors()){
+								if (closestVC //&& selected_action->originalCell->countFreeNeighbors()
+										){
 									double min_dist =	closestVC->getDistanceSquareTo(
 											selected_action->originalCell->location[0]);
 

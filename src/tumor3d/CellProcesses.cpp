@@ -2665,7 +2665,7 @@ double GetDeathRate( Agent * agent){
 	// HEAVYSIDE
 	//necrotic = MAX( necrotic, Heavyside( agent->location[0]->lactate - VoronoiCell::LACTATE_THRESHOLD_DEATH, 1));
 	// LINEAR
-	necrotic = MAX( necrotic, agent->location[0]->lactate/100.);
+	//necrotic = MAX( necrotic, agent->location[0]->lactate/100.);
 	// HILL
 	float n=2;
 	necrotic = MAX( necrotic, pow(agent->location[0]->lactate,n)/(pow(agent->location[0]->lactate,n)+pow(VoronoiCell::LACTATE_THRESHOLD_DEATH,n)));
