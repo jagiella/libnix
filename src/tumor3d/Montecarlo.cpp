@@ -4167,6 +4167,11 @@ double montecarlo(int argc, char **argv)
 #if USE_GROWTH
 					case GROWTH: {
 
+
+						if( GetVoronoiCell(selected_action->originalCell)->isDomainBorder( voronoiDiagram)){
+							return maxEpsilon;
+						}
+
 						// TODO: Correct Refinement Errors!
 						//fprintf( stderr, "GROWTH of agent %i on cell %i\n", selected_action->originalCell->index, GetVoronoiCell( selected_action->originalCell)->index);
 
@@ -4406,8 +4411,7 @@ double montecarlo(int argc, char **argv)
 									if (AdaptEndTime
 											&& GetAgent(destination)
 													!= selected_action->originalCell)
-										if (GetVoronoiCell(selected_action->originalCell)->isDomainBorder(
-												voronoiDiagram)) {
+										if (GetVoronoiCell(selected_action->originalCell)->isDomainBorder( voronoiDiagram)) {
 											Time = EndTime;
 											//EndTime = Time;
 										}
